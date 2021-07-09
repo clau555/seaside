@@ -1,9 +1,10 @@
 const WIDTH = 192;
 const HEIGHT = 108;
 const SEALEVEL = 71;
+let LAT, LONG;
 
 function getSunAltitudeDegree() {
-    const position = SunCalc.getPosition(new Date(), 45.74846, 4.84671);
+    const position = SunCalc.getPosition(new Date(), LAT, LONG);
     return position.altitude * (180 / Math.PI);
 }
 

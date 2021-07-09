@@ -12,6 +12,20 @@ const audio = new Audio("audio/sea-waves.wav");
 audio.loop = true;
 audio.volume = 0.2;
 
+function setPosition(pos) {
+    const crd = pos.coords;
+    LAT = crd.latitude;
+    LONG = crd.longitude;
+    console.log("success!", LAT, LONG);
+    updateCanvas();
+}
+
+function setDefaultPosition() {
+    LAT = 45.74846;
+    LONG = 4.84671;
+    updateCanvas();
+}
+
 function updateCanvas() {
     let sunAltitude = getSunAltitudeDegree();
     let dawnAlpha = clamp(2.0 - Math.abs(sunAltitude), 0.0, 1.0);
@@ -38,5 +52,5 @@ function updateCanvas() {
 audio.load();
 audio.play();
 
-// starting main loop
-updateCanvas();
+// starting main loop by getting position
+navigator.geolocation.getCurrentPosition(setPosition, setDefaultPosition);
