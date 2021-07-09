@@ -16,7 +16,6 @@ function setPosition(pos) {
     const crd = pos.coords;
     LAT = crd.latitude;
     LONG = crd.longitude;
-    console.log("success!", LAT, LONG);
     updateCanvas();
 }
 
