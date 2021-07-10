@@ -1,10 +1,9 @@
 class Star extends Sprite {
 
-    static SPRITES = ["img/star1.png", "img/star2.png"];
+    static SPRITES = ["assets/img/star1.png", "assets/img/star2.png"];
 
     constructor(x, y) {
-        super(Star.SPRITES[Utils.randomInt(0, Star.SPRITES.length)], x, y, true, Utils.randomFloat(0.01, 0.5));
-        this.originalAlpha = this.alpha;
+        super(x, y, Star.SPRITES[Utils.randomInt(0, Star.SPRITES.length)], true, Utils.randomFloat(0.01, 0.5));
     }
 
     update(globalAlpha) {

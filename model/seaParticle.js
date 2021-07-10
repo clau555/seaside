@@ -1,9 +1,7 @@
-class SeaParticle {
+class SeaParticle extends Rect{
 
     constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.alpha = Math.random();
+        super(x, y, 1, 1, [255, 255, 255], false, 1.0);
         this.increment = Utils.randomFloat(0.004, 0.02);
     }
 
@@ -12,17 +10,6 @@ class SeaParticle {
             this.increment = -this.increment;
         }
         this.alpha += this.increment;
-    }
-
-    display(ctx) {
-        ctx.globalCompositeOperation = "source-over";
-        ctx.fillStyle = "rgba(255, 255, 255," + this.alpha + ")";
-        ctx.fillRect(this.x, this.y, 1, 1);
-    }
-
-    updateAndDisplay(ctx) {
-        this.update();
-        this.display(ctx);
     }
 
 }

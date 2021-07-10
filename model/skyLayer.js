@@ -2,13 +2,13 @@ class SkyLayer {
 
     constructor() {
         this.spriteDay = new Image();
-        this.spriteDay.src = "img/sky_day.png";
+        this.spriteDay.src = "assets/img/sky_day.png";
 
         this.spriteDawn = new Image();
-        this.spriteDawn.src = "img/sky_dawn.png";
+        this.spriteDawn.src = "assets/img/sky_dawn.png";
 
         this.spriteNight = new Image();
-        this.spriteNight.src = "img/sky_night.png";
+        this.spriteNight.src = "assets/img/sky_night.png";
 
         this.stars = [];
         for (let i = 0; i < Constants.starsMap.length; i++) {

@@ -2,7 +2,7 @@ class FrontLayer {
 
     constructor() {
         // all layer sprites
-        this.sea = new Sprite("img/sea.png", 0, Constants.SEALEVEL);
+        this.sea = new Sprite( 0, Constants.SEALEVEL, "assets/img/sea.png");
 
         // sea particles
         this.particles = [];
@@ -12,9 +12,9 @@ class FrontLayer {
 
         // color images used for masks
         this.dawnColorImage = new Image();
-        this.dawnColorImage.src = "img/color_dawn.png";
+        this.dawnColorImage.src = "assets/img/color_dawn.png";
         this.nightColorImage = new Image();
-        this.nightColorImage.src = "img/color_night.png";
+        this.nightColorImage.src = "assets/img/color_night.png";
 
         this.dawnMask = this.createCanvas();
         this.nightMask = this.createCanvas();
@@ -27,7 +27,8 @@ class FrontLayer {
         return canvas;
     }
 
-    updateMask(ctx, colorImage) {
+    updateMask(canvas, colorImage) {
+        let ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // drawing all layer sprites
@@ -42,8 +43,8 @@ class FrontLayer {
     display(ctx, canvas, sunAltitude, dawnAlpha) {
 
         // updating color masks
-        this.updateMask(this.dawnMask.getContext("2d"), this.dawnColorImage);
-        this.updateMask(this.nightMask.getContext("2d"), this.nightColorImage);
+        this.updateMask(this.dawnMask, this.dawnColorImage);
+        this.updateMask(this.nightMask, this.nightColorImage);
 
         // drawing sprites
         ctx.globalCompositeOperation = "source-over";
@@ -51,7 +52,8 @@ class FrontLayer {
 
         // drawing sea particles
         for (let particle of this.particles) {
-            particle.updateAndDisplay(ctx);
+            particle.update();
+            particle.display(ctx);
         }
 
         // applying dawn color mask

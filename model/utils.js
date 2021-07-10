@@ -21,9 +21,13 @@ class Utils {
 
 
 class Config {
-    static lat = 48.85341;
-    static long = 2.3488;
-    static audio = new Audio("audio/sea-waves.wav");
+    static DEFAULTLAT = 48.85341;
+    static DEFAULTLONG = 2.3488;
+
+    static positionId;
+    static lat = Config.DEFAULTLAT;
+    static long = Config.DEFAULTLONG;
+    static audio = new Audio("assets/sea-waves.wav");
 }
 
 
