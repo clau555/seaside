@@ -20,6 +20,13 @@ class Utils {
 }
 
 
+class Config {
+    static lat = 48.85341;
+    static long = 2.3488;
+    static audio = new Audio("audio/sea-waves.wav");
+}
+
+
 class Constants {
 
     static WIDTH = 192;
@@ -55,11 +62,4 @@ class Constants {
         [83, 48], [170, 48], [10, 50], [191, 107]
     ];
 
-}
-
-
-class Config {
-    static lat = 48.85341;
-    static long = 2.3488;
-    static audio = new Audio("audio/sea-waves.wav");
 }

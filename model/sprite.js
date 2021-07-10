@@ -5,10 +5,16 @@ class Sprite {
         this.sprite.src = spriteFile;
         this.x = x;
         this.y = y;
-        this.w = this.sprite.width;
-        this.h = this.sprite.height;
         this.centered = centered;
         this.alpha = alpha;
+
+        // waiting until sprite is loaded to get dimensions
+        this.w = 0;
+        this.h = 0;
+        this.sprite.onload = () => {
+            this.w = this.sprite.width;
+            this.h = this.sprite.height;
+        }
     }
 
     update(x, y) {
