@@ -5,6 +5,8 @@ class Sprite {
         this.sprite.src = spriteFile;
         this.x = x;
         this.y = y;
+        this.w = this.sprite.width;
+        this.h = this.sprite.height;
         this.centered = centered;
         this.alpha = alpha;
     }
@@ -19,8 +21,8 @@ class Sprite {
 
         if (this.centered) {
             ctx.drawImage(this.sprite,
-                Math.floor(this.x - this.sprite.width / 2),
-                Math.floor(this.y - this.sprite.height / 2));
+                Math.floor(this.x - this.w / 2),
+                Math.floor(this.y - this.h / 2));
         } else {
             ctx.drawImage(this.sprite, this.x, this.y);
         }

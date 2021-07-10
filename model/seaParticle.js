@@ -4,7 +4,7 @@ class SeaParticle {
         this.x = x;
         this.y = y;
         this.alpha = Math.random();
-        this.increment = randomFloat(0.004, 0.02);
+        this.increment = Utils.randomFloat(0.004, 0.02);
     }
 
     update() {

@@ -11,8 +11,8 @@ class SkyLayer {
         this.spriteNight.src = "img/sky_night.png";
 
         this.stars = [];
-        for (let i = 0; i < starsMap.length; i++) {
-            this.stars.push(new Star(starsMap[i][0], starsMap[i][1]));
+        for (let i = 0; i < Constants.starsMap.length; i++) {
+            this.stars.push(new Star(Constants.starsMap[i][0], Constants.starsMap[i][1]));
         }
     }
 
@@ -28,7 +28,7 @@ class SkyLayer {
             ctx.drawImage(this.spriteNight, 0, 0, canvas.width, canvas.height);
         } else if (sunAltitude >= 179) {
             // night sky fades away on sunrise
-            ctx.globalAlpha = clamp(sunAltitude - 179, 0.0, 1.0);
+            ctx.globalAlpha = Utils.clamp(sunAltitude - 179, 0.0, 1.0);
             ctx.drawImage(this.spriteNight, 0, 0, canvas.width, canvas.height);
         }
 
