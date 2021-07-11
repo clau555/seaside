@@ -3,6 +3,7 @@ class FrontLayer {
     constructor() {
         // all layer sprites
         this.sea = new Sprite( 0, Constants.SEALEVEL, "assets/img/sea.png");
+        this.boats = [];
 
         // sea particles
         this.particles = [];
@@ -34,23 +35,49 @@ class FrontLayer {
         // drawing all layer sprites
         ctx.globalCompositeOperation = "source-over";
         this.sea.display(ctx);
+        for (let boat of this.boats) {
+            boat.display(ctx);
+        }
 
         // getting a color mask from the drawn sprites
         ctx.globalCompositeOperation = "source-in";
         ctx.drawImage(colorImage, 0, 0);
     }
 
+    addRandomBoat() {
+        let orientation = [-1, 1][Utils.randomInt(0, 2)];
+        let x = (orientation === 1) ? - 6 : Constants.WIDTH + 6;
+        this.boats.push(new Boat(x, Constants.SEALEVEL - 7, orientation));
+    }
+
     display(ctx, canvas, sunAltitude, dawnAlpha) {
+
+        // updating boats
+        for (let boat of this.boats) {
+            boat.update();
+        }
 
         // updating color masks
         this.updateMask(this.dawnMask, this.dawnColorImage);
         this.updateMask(this.nightMask, this.nightColorImage);
 
+        // small chance of boat spawning
+        if (Utils.randomInt(0, 5000) === 0 && this.boats.length < 3) {
+            this.addRandomBoat();
+        }
+
         // drawing sprites
         ctx.globalCompositeOperation = "source-over";
+
+        // boats
+        for (let boat of this.boats) {
+            boat.display(ctx);
+        }
+
+        // sea
         this.sea.display(ctx);
 
-        // drawing sea particles
+        // sea particles
         for (let particle of this.particles) {
             particle.update();
             particle.display(ctx);
@@ -72,8 +99,30 @@ class FrontLayer {
             ctx.drawImage(this.nightMask, 0, 0);
         }
 
+        // delete boat if outside screen
+        for (let boat of this.boats) {
+            if (boat.x < -Constants.OUTOFBOUND || Constants.WIDTH + Constants.OUTOFBOUND < boat.x) {
+                this.boats.splice(this.boats.indexOf(boat), 1);
+            }
+        }
+
         ctx.globalAlpha = 1.0;
         ctx.globalCompositeOperation = "source-over";
+    }
+
+}
+
+
+class Boat extends Sprite {
+
+    static SPEED = 0.04;
+
+    constructor(x, y, orientation) {
+        super(x, y, "assets/img/boat.png", false, 1.0, orientation);
+    }
+
+    update() {
+    super.update(this.x + Boat.SPEED * this.orientation, this.y);
     }
 
 }

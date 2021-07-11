@@ -23,17 +23,12 @@ class UiLayer {
         // canvas click handler
         this.canvas.addEventListener("click", () => {
             for (let button of this.buttons) {
-                if (UiLayer.positionOnRect(this.mousePosition.x, this.mousePosition.y, button)) {
+                if (Utils.isInsideRect(this.mousePosition.x, this.mousePosition.y, button)) {
                     this.show();
                     button.action();
                 }
             }
         });
-    }
-
-    static positionOnRect(x, y, rect) {
-        return rect.x <= x && x <= rect.x + rect.w
-            && rect.y <= y && y <= rect.y + rect.h;
     }
 
     getMousePositionOnCanvas(event) {
@@ -57,7 +52,7 @@ class UiLayer {
         // buttons
         for (let button of this.buttons) {
             button.alpha = 0.5;
-            if (UiLayer.positionOnRect(this.mousePosition.x, this.mousePosition.y, button)) {
+            if (Utils.isInsideRect(this.mousePosition.x, this.mousePosition.y, button)) {
                 button.alpha = button.originalAlpha;
                 this.canvas.style.cursor = "pointer";
             }

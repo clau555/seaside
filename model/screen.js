@@ -13,12 +13,10 @@ class Screen {
         // overlay layer
         this.overlay = new Image();
         this.overlay.src = "assets/img/overlay.png";
-
     }
 
     updateCanvas() {
         let sunAltitude = Utils.getSunAltitudeDegree();
-        //sunAltitude = -5.0;
 
         // sets how much the dawn (color filter and sky change) is visible.
         // 0.0 means hidden, 1.0 means fully visible.
