@@ -45,7 +45,7 @@ class UiLayer {
         this.lastMoveCounter = UiLayer.VISIBILITYDELAY;
     }
 
-    display(ctx) {
+    updateAndDisplay(ctx) {
         ctx.globalCompositeOperation = "source-over";
         this.canvas.style.cursor = "default";
 

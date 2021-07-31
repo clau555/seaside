@@ -22,10 +22,12 @@ class Rect {
         return colorStr;
     }
 
-    update(x, y) {
+    setCoordinates(x, y) {
         this.x = x;
         this.y = y;
     }
+
+    update() {}
 
     display(ctx) {
         if (this.visible) {

@@ -26,10 +26,10 @@ class Screen {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         // sky
-        this.skyLayer.display(this.ctx, this.canvas, sunAltitude, dawnAlpha);
+        this.skyLayer.updateAndDisplay(this.ctx, this.canvas, sunAltitude, dawnAlpha);
 
         // sun
-        this.sun.update(this.sun.x, Constants.SEALEVEL - sunAltitude * 8);
+        this.sun.setCoordinates(this.sun.x, Constants.SEALEVEL - sunAltitude * 8);
         this.sun.display(this.ctx);
 
         // front sprites
@@ -40,7 +40,7 @@ class Screen {
         this.ctx.drawImage(this.overlay, 0, 0, this.canvas.width, this.canvas.height);
 
         // ui
-        this.ui.display(this.ctx);
+        this.ui.updateAndDisplay(this.ctx);
 
         requestAnimationFrame(screen.updateCanvas.bind(this));
     }

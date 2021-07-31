@@ -122,7 +122,7 @@ class Boat extends Sprite {
     }
 
     update() {
-    super.update(this.x + Boat.SPEED * this.orientation, this.y);
+    super.setCoordinates(this.x + Boat.SPEED * this.orientation, this.y);
     }
 
 }

@@ -14,9 +14,11 @@ class SkyLayer {
         for (let i = 0; i < Constants.starsMap.length; i++) {
             this.stars.push(new Star(Constants.starsMap[i][0], Constants.starsMap[i][1]));
         }
+
+        this.shootingStars = [];
     }
 
-    display(ctx, canvas, sunAltitude, dawnAlpha) {
+    updateAndDisplay(ctx, canvas, sunAltitude, dawnAlpha) {
 
         ctx.globalCompositeOperation = "source-over";
 
@@ -42,6 +44,27 @@ class SkyLayer {
                 star.update(1.0 - dawnAlpha);
                 star.display(ctx);
             }
+
+            // spawning random shooting star
+            if (Utils.randomInt(0, 1000) === 0) {
+                this.shootingStars.push(new ShootingStar(
+                    Utils.randomInt(0, Constants.WIDTH),
+                    Utils.randomInt(0, Constants.SEALEVEL - 50)
+                ));
+            }
+
+        }
+
+        // drawing shooting stars
+        for (let shootingStar of this.shootingStars) {
+            shootingStar.update();
+
+            // delete shooting star if animation finished
+            if (shootingStar.updateCounter >= ShootingStar.SPRITES.length) {
+                this.shootingStars.splice(this.shootingStars.indexOf(shootingStar), 1);
+            }
+
+            shootingStar.display(ctx);
         }
 
         ctx.globalAlpha = 1.0;
@@ -52,7 +75,7 @@ class SkyLayer {
 
 class Star extends Sprite {
 
-    static SPRITES = ["assets/img/star1.png", "assets/img/star2.png"];
+    static SPRITES = ["assets/img/star1.png", "assets/img/star2.png", "assets/img/star3.png"];
 
     constructor(x, y) {
         super(x, y, Star.SPRITES[Utils.randomInt(0, Star.SPRITES.length)], true, Utils.randomFloat(0.01, 0.5));
@@ -68,4 +91,26 @@ class Star extends Sprite {
         }
     }
 
+}
+
+
+class ShootingStar extends AnimatedSprite {
+
+    static SPRITES = [
+        "assets/img/shooting_star/1.png",
+        "assets/img/shooting_star/2.png",
+        "assets/img/shooting_star/3.png",
+        "assets/img/shooting_star/4.png",
+        "assets/img/shooting_star/5.png"
+    ];
+
+    constructor(x, y) {
+        super(x, y, ShootingStar.SPRITES);
+        this.updateCounter = 0;
+    }
+
+    update() {
+        super.update();
+        this.updateCounter += 1;
+    }
 }
