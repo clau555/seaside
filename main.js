@@ -12,8 +12,7 @@ let pageWidth = Math.max(
     document.documentElement.scrollWidth,
     document.documentElement.offsetWidth
 );
-document.documentElement.scrollLeft = pageWidth / 2
-    - document.documentElement.clientWidth + document.documentElement.clientWidth / 2;
+document.documentElement.scrollLeft = pageWidth / 2 - document.documentElement.clientWidth / 2;
 
 // starting main screen loop
 const screen = new Screen();
