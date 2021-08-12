@@ -5,12 +5,11 @@ html, body {
 }
 
 #canvas {
-    background: black;
-    height: 100%;
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    height: 100%;
+    left: 0;
+    right: 0;
+    margin: auto;
     image-rendering: -moz-crisp-edges;
     image-rendering: -webkit-crisp-edges;
     image-rendering: pixelated;

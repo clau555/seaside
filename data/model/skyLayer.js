@@ -46,7 +46,7 @@ class SkyLayer {
             }
 
             // spawning random shooting star
-            if (Utils.randomInt(0, 1000) === 0) {
+            if (Utils.randomInt(0, 1000) === 0 && dawnAlpha <= 0) {
                 this.shootingStars.push(new ShootingStar(
                     Utils.randomInt(0, Constants.WIDTH),
                     Utils.randomInt(0, Constants.SEALEVEL - 50)

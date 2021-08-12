@@ -93,10 +93,6 @@ class FrontLayer {
             ctx.globalCompositeOperation = "multiply";
             ctx.globalAlpha = 1.0 - dawnAlpha;
             ctx.drawImage(this.nightMask, 0, 0);
-        } else if (sunAltitude >= 179) {
-            ctx.globalCompositeOperation = "multiply";
-            ctx.globalAlpha = Utils.clamp(sunAltitude - 179, 0.0, 1.0);
-            ctx.drawImage(this.nightMask, 0, 0);
         }
 
         // delete boat if outside screen

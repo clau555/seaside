@@ -10,8 +10,8 @@ class UiLayer {
         this.lastMoveCounter = UiLayer.VISIBILITYDELAY;
 
         // ui button elements
-        const volumeButton = new VolumeButton(Constants.WIDTH - 20, Constants.HEIGHT - 10);
-        const positionButton = new PositionButton(Constants.WIDTH - 10, Constants.HEIGHT - 10);
+        const volumeButton = new VolumeButton(12, 2);
+        const positionButton = new PositionButton(2, 2);
         this.buttons = [volumeButton, positionButton];
 
         // ui visibility handler
