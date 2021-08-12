@@ -39,9 +39,9 @@ class SkyLayer {
         ctx.drawImage(this.spriteDawn, 0, 0, canvas.width, canvas.height);
 
         // drawing stars at night
-        if (sunAltitude < 0) {
+        if (dawnAlpha <= 0.3) {
             for (let star of this.stars) {
-                star.update(1.0 - dawnAlpha);
+                star.update();
                 star.display(ctx);
             }
 
@@ -81,11 +81,8 @@ class Star extends Sprite {
         super(x, y, Star.SPRITES[Utils.randomInt(0, Star.SPRITES.length)], true, Utils.randomFloat(0.01, 0.5));
     }
 
-    update(globalAlpha) {
-        if (globalAlpha < 1) {
-            this.alpha = this.originalAlpha * globalAlpha;
-        }
-        else if (!Utils.randomInt(0, 50) && globalAlpha >= 1) {
+    update() {
+        if (!Utils.randomInt(0, 50)) {
             this.alpha = this.originalAlpha + Utils.randomFloat(-0.1, 0.1);
             this.alpha = Utils.clamp(this.alpha, 0.1, 1.0);
         }
