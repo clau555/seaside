@@ -39,7 +39,7 @@ class SkyLayer {
         ctx.drawImage(this.spriteDawn, 0, 0, canvas.width, canvas.height);
 
         // drawing stars at night
-        if (dawnAlpha <= 0.3) {
+        if (dawnAlpha <= 0.3 && sunAltitude < 0) {
             for (let star of this.stars) {
                 star.update();
                 star.display(ctx);
