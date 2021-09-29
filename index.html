@@ -7,20 +7,19 @@
     <meta name="viewport" content="initial-scale=1; maximum-scale=1; user-scalable=0;"/>
 
     <link rel="stylesheet" href="style.css">
+    <script src="https://use.fontawesome.com/releases/v5.15.2/js/all.js"></script>
     <link rel="icon" href="assets/favicon.ico"/>
 
     <title>Seaside</title>
 </head>
 <body>
-    <canvas id="canvas" width="192" height="108"></canvas>
-    <canvas id="canvasTmp" width="192" height="108" hidden></canvas>
-
+    <!--libs-->
     <script src="lib/suncalc.js"></script>
 
+    <!--model-->
     <script src="data/engine/rect.js"></script>
     <script src="data/engine/sprite.js"></script>
     <script src="data/engine/animatedSprite.js"></script>
-    <script src="data/engine/clickable.js"></script>
 
     <script src="data/constants.js"></script>
     <script src="data/config.js"></script>
@@ -28,9 +27,17 @@
 
     <script src="data/model/skyLayer.js"></script>
     <script src="data/model/frontLayer.js"></script>
-    <script src="data/model/uiLayer.js"></script>
     <script src="data/model/screen.js"></script>
 
+    <!--html elements-->
+    <canvas id="canvas" width="192" height="108"></canvas>
+    <canvas id="canvasTmp" width="192" height="108" hidden></canvas>
+    <div id="buttons">
+        <button id="position" class="button" type="button"><i class="fas fa-map-marker-alt"></i></button>
+        <button id="volume" class="button" type="button"><i class="fas fa-volume-up"></i></button>
+    </div>
+
+    <!--program start-->
     <script defer src="main.js"></script>
 </body>
 </html>

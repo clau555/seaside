@@ -1,16 +1,14 @@
 class Screen {
 
-    constructor() {
-        this.canvas = document.getElementById("canvas");
+    constructor(canvas) {
+        this.canvas = canvas;
         this.ctx = this.canvas.getContext("2d");
 
-        // layers
+        // canvas layers
         this.skyLayer = new SkyLayer();
         this.sun = new Sprite(this.canvas.width / 2, this.canvas.height / 2, "assets/img/sun.png", true);
         this.frontLayer = new FrontLayer();
-        this.ui = new UiLayer(this.canvas);
 
-        // overlay layer
         this.overlay = new Image();
         this.overlay.src = "assets/img/overlay.png";
     }
@@ -38,9 +36,6 @@ class Screen {
         // global color overlay
         this.ctx.globalCompositeOperation = "overlay";
         this.ctx.drawImage(this.overlay, 0, 0, this.canvas.width, this.canvas.height);
-
-        // ui
-        this.ui.updateAndDisplay(this.ctx);
 
         requestAnimationFrame(screen.updateCanvas.bind(this));
     }
