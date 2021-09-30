@@ -26,6 +26,16 @@ html, body {
     bottom: 0;
     margin-bottom: 15px;
     text-align: center;
+    opacity: 0;
+    -webkit-transition: opacity 0.2s ease-in-out;
+    -moz-transition: opacity 0.2s ease-in-out;
+    -ms-transition: opacity 0.2s ease-in-out;
+    -o-transition: opacity 0.2s ease-in-out;
+    transition: opacity 0.2s ease-in-out;
+}
+
+body:hover > #buttons {
+    opacity: 0.5;
 }
 
 .button {
@@ -38,7 +48,6 @@ html, body {
     margin: 5px;
     font-size: 32px;
     cursor: pointer;
-    opacity: 0.4;
 }
 
 .button:hover {
