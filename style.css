@@ -23,24 +23,23 @@ html, body {
 #buttons {
     position: absolute;
     width: 100%;
-    bottom: 0;
+    height: 100px;
+    top: -100px;
     margin-bottom: 15px;
-    text-align: center;
-    opacity: 0;
-    -webkit-transition: opacity 0.2s ease-in-out;
-    -moz-transition: opacity 0.2s ease-in-out;
-    -ms-transition: opacity 0.2s ease-in-out;
-    -o-transition: opacity 0.2s ease-in-out;
-    transition: opacity 0.2s ease-in-out;
-}
-
-body:hover > #buttons {
-    opacity: 0.5;
+    opacity: 1;
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    -webkit-transition: top 0.2s ease-in-out;
+    -moz-transition: top 0.2s ease-in-out;
+    -ms-transition: top 0.2s ease-in-out;
+    -o-transition: top 0.2s ease-in-out;
+    transition: top 0.2s ease-in-out;
 }
 
 .button {
-    color: white;
-    background-color: gray;
+    color: #000000;
+    background-color: #ffffff;
     border: none;
     border-radius: 100%;
     height: 60px;
@@ -48,8 +47,9 @@ body:hover > #buttons {
     margin: 5px;
     font-size: 32px;
     cursor: pointer;
+    align-self: center;
 }
 
 .button:hover {
-    background-color: darkgray;
+    background-color: #e8e8e8;
 }
