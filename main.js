@@ -60,7 +60,11 @@ document.body.addEventListener("click", (e) => {
         target = target.parentNode;
     }
     if (!buttons.includes(target) && target.getAttribute("data-prefix") !== 'fas') {
-        buttonsDiv.style.top = (buttonsDiv.offsetTop * -1 - 100).toString() + "px";
+        if (buttonsDiv.offsetTop < 0) {
+            buttonsDiv.style.top = "0px";
+        } else if (buttonsDiv.offsetTop >= 0) {
+            buttonsDiv.style.top = "-100px";
+        }
     }
 })
 
