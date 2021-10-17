@@ -1,8 +1,7 @@
 class Utils {
 
-    static getSunAltitudeDegree() {
-        const position = SunCalc.getPosition(new Date(), Config.lat, Config.long);
-        return position.altitude * (180 / Math.PI);
+    static radiansToDegrees(angle) {
+        return angle * (180 / Math.PI);
     }
 
     static clamp(n, min, max) {
