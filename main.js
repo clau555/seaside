@@ -1,160 +1,112 @@
-// CONSTANTS
-
 const sceneWidth = 256;
 const sceneHeight = 144;
-const seaLevel = 130;
+const seaLevel = 120;
 const noonAngle = 5;
 
-const latitude = 48.85341;
-const longitude =  2.3488;
+let latitude = 48.85341;
+let longitude =  2.3488;
 
-const times = {
-    DAY: "day",
-    NOON: "noon",
-    NIGHT: "night"
-};
-let time = times.DAY;
-
-const urls = {
-    skyDay: "/assets/img/sky_day.png",
-    skyNoon: "/assets/img/sky_noon.png",
-    skyNight: "/assets/img/sky_night.png",
-    sun: "/assets/img/sun.png",
-    sea: "/assets/img/sea.png"
+const skyColors = {
+    sunrise: ['#4291d0', '#FDC274'],
+    day: ['#29CFFF', '#FFFFFF'],
+    sunset: ['#BD242B', '#fbc903'],
+    night: ['#08001F', '#120054'],
 };
 
+const sunriseText = createSkyTexture(skyColors.sunrise);
+const dayText = createSkyTexture(skyColors.day);
+const sunsetText = createSkyTexture(skyColors.sunset);
+const nightText = createSkyTexture(skyColors.night);
 
-// FUNCTIONS
+const app = new PIXI.Application({width: sceneWidth, height: sceneHeight});
+document.body.appendChild(app.view);
 
-function createLayer(stage) {
-    const layer = new Konva.Layer();
-    layer.imageSmoothingEnabled(false);
-    stage.add(layer);
-    return layer;
+// sprites
+const sky = new PIXI.Sprite(dayText);
+const sun = PIXI.Sprite.from('/assets/img/sun.png');
+const sea = PIXI.Sprite.from('/assets/img/sea.png');
+sun.anchor.set(0.5);
+sea.y = seaLevel;
+app.stage.addChildAt(sky, 0);
+app.stage.addChildAt(sun, 1);
+app.stage.addChildAt(sea, 2);
+
+//  main loop
+app.ticker.add(() => {
+    const curDate = new Date();
+
+    const times = SunCalc.getTimes(curDate, latitude, longitude);
+
+    const sunrisePos = SunCalc.getPosition(times.sunrise, latitude, longitude);
+    const noonPos = SunCalc.getPosition(times.solarNoon, latitude, longitude);
+    const curPos = SunCalc.getPosition(curDate, latitude, longitude);
+
+    sunUpdate(curPos, sunrisePos, noonPos);
+    skyUpdate(curDate, times);
+});
+
+function sunUpdate(curPos, sunrisePos, noonPos) {
+    const azimuthOffset = Math.abs(sunrisePos.azimuth) + 0.1;
+    sun.x = ~~(sceneWidth * ((curPos.azimuth + azimuthOffset) % (azimuthOffset * 2)) / (azimuthOffset * 2));
+    sun.y = ~~(seaLevel - (seaLevel - 10) * curPos.altitude / noonPos.altitude);
 }
 
-function radianToDegree(angle) {
-    return angle * 180 / Math.PI;
-}
+function skyUpdate(todayDate) {
+    const tomorrowDate = new Date();
+    tomorrowDate.setDate(todayDate.getDate() + 1);
 
-function loadImages(urls, callback) {
-    const images = {};
-    const numImages = Object.keys(urls).length;
-    let loadedImages = 0;
+    const todayTimes = SunCalc.getTimes(todayDate, latitude, longitude);
+    const tomorrowTimes = SunCalc.getTimes(tomorrowDate, latitude, longitude);
 
-    for (let urlKey in urls) {
+    const timeWindows = [
+        {texture: sunriseText, start: todayTimes.sunrise.getTime(), end: todayTimes.sunriseEnd.getTime()},
+        {texture: dayText, start: todayTimes.sunriseEnd.getTime(), end: todayTimes.sunsetStart.getTime()},
+        {texture: sunsetText, start: todayTimes.sunsetStart.getTime(), end: todayTimes.sunset.getTime()},
+        {texture: nightText, start: todayTimes.sunset.getTime(), end: tomorrowTimes.dawn.getTime()},
+    ];
 
-        // creating new image
-        let image = new Image();
-        image.src = urls[urlKey];
-        image.onload = () => {
-            loadedImages++;
-            if (loadedImages >= numImages) {
-                callback(images);
-            }
-        };
+    const now = todayDate.getTime();
 
-        // adding it to the document
-        images[urlKey] = image;
+    for (let timeWindow of timeWindows) {
+        if (now >= timeWindow.start && now < timeWindow.end) {
+            //const prog = (timeWindow.end - timeWindow.start) / (now - timeWindow.start);
+            sky.texture = timeWindow.texture;
+        }
     }
 }
 
-// main function, called when all images are loaded
-function buildStage(images) {
+// https://pixijs.io/examples/#/textures/gradient-basic.js
+function createSkyTexture(colors) {
+    const canvas = document.createElement('canvas');
+    canvas.width = sceneWidth;
+    canvas.height = sceneHeight;
 
-    // layers
-    const backLayer = createLayer(stage);
-    const frontLayer = createLayer(stage);
+    const ctx = canvas.getContext('2d');
 
-    // sky
-    const sky = new Konva.Image({
-        image: images.skyDay,
-    });
+    const grd = ctx.createLinearGradient(0, 0, 0, sceneHeight);
+    grd.addColorStop(0.1, colors[0]);
+    grd.addColorStop(0.7, colors[1]);
 
-    // sun
-    const sun = new Konva.Image({
-        image: images.sun,
-    });
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, sceneWidth, sceneHeight);
 
-    // sea
-    const sea = new Konva.Image({
-        image: images.sea,
-        y: seaLevel,
-    });
-
-    backLayer.add(sky);
-    frontLayer.add(sun);
-    frontLayer.add(sea);
-
-    //TODO sky animations (tween can't work)
-
-    // sun animation
-    const sunAnimation = new Konva.Animation(() => {
-        const position = SunCalc.getPosition(new Date(), latitude, longitude);
-        const azimuth = radianToDegree(position.azimuth);
-        const altitude = radianToDegree(position.altitude);
-
-        // period of the day depending on sun altitude angle
-        if (altitude > noonAngle) {
-            time = times.DAY;
-        } else if (altitude < -noonAngle) {
-            time = times.NIGHT;
-        } else {
-            time = times.NOON;
-        }
-
-        // invisible at night (avoid seeing sun flare at night)
-        if (time === times.NIGHT) {
-            sun.opacity(0);
-        } else {
-            sun.opacity(1);
-        }
-
-        // screen position update
-        sun.x(sceneWidth / 2 - sun.width() / 2); //TODO horizontal translation
-        sun.y(~~(seaLevel - altitude * seaLevel / 90) - sun.height() / 2);
-
-    }, frontLayer);
-    sunAnimation.start();
-
-    backLayer.draw();
-    frontLayer.draw();
-    resizeUpdate();
+    return PIXI.Texture.from(canvas);
 }
 
-
-// INITIALIZATION
-
-const stage = new Konva.Stage({
-    container: "container",
-    width: sceneWidth,
-    height: sceneHeight
-});
-
-loadImages(urls, buildStage);
-
-
-// EVENTS
-
-function resizeUpdate() {
-    let container = document.querySelector("#container");
-
-    // scale the canvas properly
-    let scale = container.clientHeight / sceneHeight;
-    stage.height(sceneHeight * scale);
-    stage.width(sceneWidth * scale);
-    stage.scale({x: scale, y: scale});
-
-    // keep the canvas centered
-    let offset;
-    if (stage.width() > window.innerWidth) {
-        offset = (stage.width() - window.innerWidth) / -2;
-    } else {
-        offset = (window.innerWidth - stage.width()) / 2;
-    }
-    container.style.left = offset.toString() + "px";
+// https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+function hexToRgb(hex) {
+    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
 }
 
-window.addEventListener("resize", () => {
-    resizeUpdate();
-});
+// https://stackoverflow.com/questions/22218140/calculate-the-color-at-a-given-point-on-a-gradient-between-two-colors
+function getInterpolationColor(percent, color1, color2) {
+    const r = color1.r + percent * (color2.r - color1.r);
+    const g = color1.g + percent * (color2.g - color1.g);
+    const b = color1.b + percent * (color2.b - color1.b);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
