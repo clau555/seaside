@@ -21,12 +21,20 @@ const skyTextures = {
 const latitude = 54;
 const longitude = -6.41667;
 
-// sprites
+// sky
 const sky = new PIXI.Sprite(skyTextures.day);
+
+// sun
 const sun = PIXI.Sprite.from('/assets/img/sun.png');
-const sea = PIXI.Sprite.from('/assets/img/sea.png');
 sun.anchor.set(0.5); // makes sun coordinates centered on its sprite
+
+// sea
+let sea = new PIXI.AnimatedSprite(['/assets/img/sea/1.png', '/assets/img/sea/2.png'].map((e) => {
+    return PIXI.Texture.from(e);
+}));
 sea.y = seaLevel; // places sea sprite on the correct height
+sea.animationSpeed = 0.02;
+sea.play();
 
 // stage initialization
 const app = new PIXI.Application({width: sceneWidth, height: sceneHeight});
