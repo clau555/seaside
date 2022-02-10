@@ -46,29 +46,84 @@ app.stage.addChildAt(sea, 2);
 // main loop
 let counter = 0;
 app.ticker.add(() => {
+
     let today = new Date();
     today.setTime(today.getTime() + 60000 * counter);
     counter++;
-    const times = SunCalc.getTimes(today, latitude, longitude); // today's events
+    const events = SunCalc.getTimes(today, latitude, longitude);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomEvents = SunCalc.getTimes(tomorrow, latitude, longitude);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yestEvents = SunCalc.getTimes(yesterday, latitude, longitude);
 
     // sun angle position in the sky at different times of the day
-    const sunrisePos = SunCalc.getPosition(times.sunrise, latitude, longitude);
-    const noonPos = SunCalc.getPosition(times.solarNoon, latitude, longitude);
+    const sunrisePos = SunCalc.getPosition(events.sunrise, latitude, longitude);
+    const noonPos = SunCalc.getPosition(events.solarNoon, latitude, longitude);
     const curPos = SunCalc.getPosition(today, latitude, longitude);
 
-    const timeWindows = [
-        { skyTexture: skyTextures.sunrise, colors: skyColors.sunrise, start: times.dawn.getTime() },
-        { skyTexture: skyTextures.day, colors: skyColors.day, start: times.sunriseEnd.getTime() },
-        { skyTexture: skyTextures.sunset, colors: skyColors.sunset, start: times.sunsetStart.getTime() },
-        { skyTexture: skyTextures.night, colors: skyColors.night, start: times.sunset.getTime() },
+    // windows of the different phases of the day
+    const windows = [
+        { skyTexture: skyTextures.sunrise, colors: skyColors.sunrise, start: events.dawn.getTime() },
+        { skyTexture: skyTextures.day, colors: skyColors.day, start: events.sunriseEnd.getTime() },
+        { skyTexture: skyTextures.sunset, colors: skyColors.sunset, start: events.sunsetStart.getTime() },
+        { skyTexture: skyTextures.night, colors: skyColors.night, start: events.sunset.getTime() },
     ];
 
+    // finding the current time window
+
+    let found = false; // true when the current window has been found
+    let night = false; // true if the current window is nighttime
+
+    const idx = {
+        cur: 0, // current window index
+        next: 0, // next window index
+    };
+
+    const times = {
+        now: today.getTime(), // current time
+        start: 0, // current window starting time
+        end: 0, // current window ending time
+    };
+
+    while (idx.cur < windows.length && !found) {
+
+        idx.next = (idx.cur + 1) % windows.length; // loops through the array
+        times.start = windows[idx.cur].start;
+        times.end = windows[idx.next].start;
+        night = idx.cur + 1 === windows.length;
+
+        // at night, the window can end on tomorrow's dawn
+        // and begin on yesterday's sunset
+        let hour = today.getHours();
+        if (night && hour > 12) {
+            times.end = tomEvents.dawn.getTime();
+        } else if (night) {
+            times.start = yestEvents.sunset.getTime();
+        }
+        if (times.start <= times.now &&
+            times.now < times.end) {
+            found = true;
+        }
+        idx.cur++;
+    }
+    idx.cur--;
+    console.log(times.end === windows[idx.next].start);
+
+    // canvas elements updates
     sunUpdate(curPos, sunrisePos, noonPos);
-    skyUpdate(today, timeWindows);
+    skyUpdate(windows, idx, times);
+    randomShootingStars(night);
 });
 
 /**
  * Updates sun sprite position on screen according to real time sun position.
+ * @param {Object} curPos
+ * @param {Object} sunrisePos
+ * @param {Object} noonPos
  */
 function sunUpdate(curPos, sunrisePos, noonPos) {
 
@@ -82,48 +137,39 @@ function sunUpdate(curPos, sunrisePos, noonPos) {
 
 /**
  * Updates sun colors and texture.
+ * @param {Object} windows
+ * @param {Object} idx
+ * @param {Object} times
  */
-function skyUpdate(today, timeWindows) {
-    const now = today.getTime();
+function skyUpdate(windows, idx, times) {
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowTimes = SunCalc.getTimes(tomorrow, latitude, longitude);
+    // the sky takes the texture of the current window
+    sky.texture = windows[idx.cur].skyTexture;
 
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayTimes = SunCalc.getTimes(yesterday, latitude, longitude);
+    // color transition begins when the current time window has reached 98% of its progression
+    const beginTransition = times.start + (times.end - times.start) * 0.98;
 
-    for (let i = 0; i < timeWindows.length; i++) {
-        const j = (i + 1) % timeWindows.length; // next index, loops through the array
+    if (times.now >= beginTransition) {
+        const progress = (times.now - beginTransition) / (times.end - beginTransition);
 
-        let start = timeWindows[i].start;
-        let end = timeWindows[j].start;
-
-        // if at night, the window ends on tomorrow's dawn
-        let night = i + 1 === timeWindows.length;
-        if (night && today.getHours() > 12) {
-            end = tomorrowTimes.dawn.getTime();
-        } else if (night && today.getHours() <= 12) {
-            start = yesterdayTimes.sunset.getTime();
-        }
-
-        if (start <= now && now < end) {
-            sky.texture = timeWindows[i].skyTexture;
-
-            // color transition begins when the current time window has reached 98% of its progression
-            const beginTransition = start + (end - start) * 0.98;
-            if (now >= beginTransition) {
-                const progress = (now - beginTransition) / (end - beginTransition);
-                const color1 = getInterpolationColorStr(progress, timeWindows[i].colors[0], timeWindows[j].colors[0]);
-                const color2 = getInterpolationColorStr(progress, timeWindows[i].colors[1], timeWindows[j].colors[1]);
-                sky.texture = createSkyTexture([color1, color2]);
-            }
-        }
+        const color1 = getInterpolationColorStr(
+            progress, windows[idx.cur].colors[0], windows[idx.next].colors[0]
+        );
+        const color2 = getInterpolationColorStr(
+            progress, windows[idx.cur].colors[1], windows[idx.next].colors[1]
+        );
+        sky.texture = createSkyTexture([color1, color2]);
     }
 }
 
-// https://pixijs.io/examples/#/textures/gradient-basic.js
+function randomShootingStars(night) {
+}
+
+/**
+ * https://pixijs.io/examples/#/textures/gradient-basic.js
+ * @param {Array<string>} colorsStr
+ * @return {PIXI.Texture}
+ */
 function createSkyTexture(colorsStr) {
     const canvas = document.createElement('canvas');
     canvas.width = sceneWidth;
@@ -141,7 +187,11 @@ function createSkyTexture(colorsStr) {
     return PIXI.Texture.from(canvas);
 }
 
-// https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+/**
+ * https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+ * @param {string} hexStr
+ * @return {{r: number, b: number, g: number}}
+ */
 function hexToRgbObj(hexStr) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hexStr);
     if (result) {
@@ -155,7 +205,13 @@ function hexToRgbObj(hexStr) {
     }
 }
 
-// https://stackoverflow.com/questions/22218140/calculate-the-color-at-a-given-point-on-a-gradient-between-two-colors
+/**
+ * https://stackoverflow.com/questions/22218140/calculate-the-color-at-a-given-point-on-a-gradient-between-two-colors
+ * @param {number} percent
+ * @param {{r: number, b: number, g: number}} colorStart
+ * @param {{r: number, b: number, g: number}} colorEnd
+ * @return {string}
+ */
 function getInterpolationColorStr(percent, colorStart, colorEnd) {
     const r = colorStart.r + percent * (colorEnd.r - colorStart.r);
     const g = colorStart.g + percent * (colorEnd.g - colorStart.g);
@@ -163,6 +219,11 @@ function getInterpolationColorStr(percent, colorStart, colorEnd) {
     return rgbObjToString({ r: r, g: g, b: b });
 }
 
+/**
+ * Returns the css string of a rgb color object.
+ * @param {{r: number, b: number, g: number}} color
+ * @return {string}
+ */
 function rgbObjToString(color) {
     return 'rgb(' + color.r + ',' + color.g + ',' + color.b + ')';
 }
