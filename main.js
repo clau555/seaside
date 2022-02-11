@@ -5,16 +5,16 @@ const seaLevel = 120;
 
 // sky colors config
 const skyColors = {
-    sunrise: [ hexToRgbObj('#3f90d0'), hexToRgbObj('#ffc275') ],
-    day: [ hexToRgbObj('#2acfff'), hexToRgbObj('#b5fff6') ],
-    sunset: [ hexToRgbObj('#c42e0c'), hexToRgbObj('#fbc903') ],
-    night: [ hexToRgbObj('#08001e'), hexToRgbObj('#322777') ],
+    sunrise: [ 'rgb(63, 144, 208)', 'rgb(255, 194, 117)' ],
+    day: [ 'rgb(42, 207, 255)', 'rgb(181, 255, 246)' ],
+    sunset: [ 'rgb(196, 46, 12)', 'rgb(251, 201, 3)' ],
+    night: [ 'rgb(8, 0, 30)', 'rgb(50, 39, 119)' ],
 };
 const skyTextures = {
-    sunrise: createSkyTexture(skyColors.sunrise.map(rgbObjToString)),
-    day: createSkyTexture(skyColors.day.map(rgbObjToString)),
-    sunset: createSkyTexture(skyColors.sunset.map(rgbObjToString)),
-    night: createSkyTexture(skyColors.night.map(rgbObjToString)),
+    sunrise: createSkyTexture(skyColors.sunrise[0], skyColors.sunrise[1]),
+    day: createSkyTexture(skyColors.day[0], skyColors.day[1]),
+    sunset: createSkyTexture(skyColors.sunset[0], skyColors.sunset[1]),
+    night: createSkyTexture(skyColors.night[0], skyColors.night[1]),
 };
 
 // geographic position config
@@ -48,8 +48,8 @@ let counter = 0;
 app.ticker.add(() => {
 
     // getting today time and events
-    let today = new Date();
-    today.setTime(today.getTime() + 60000 * counter); // time acceleration
+    const today = new Date();
+    today.setTime(today.getTime() + 60000 * counter); // time speed up
     counter++;
     const events = SunCalc.getTimes(today, latitude, longitude);
 
@@ -91,7 +91,7 @@ app.ticker.add(() => {
         start: 0, // current window starting time
         end: 0, // current window ending time
     };
-    while (idx.cur < windows.length && !found) {
+    while (!found && idx.cur < windows.length) {
 
         idx.next = (idx.cur + 1) % windows.length; // loops through the array
         times.start = windows[idx.cur].start;
@@ -103,7 +103,8 @@ app.ticker.add(() => {
         let hour = today.getHours();
         if (night && (hour > 12 || hour < 1)) {
             times.end = tomEvents.dawn.getTime();
-        } else if (night) {
+        }
+        else if (night) {
             times.start = yestEvents.sunset.getTime();
         }
         if (times.start <= times.now && times.now < times.end) {
@@ -116,14 +117,13 @@ app.ticker.add(() => {
     // canvas elements updates
     sunUpdate(curPos, sunrisePos, noonPos);
     skyUpdate(windows, idx, times);
-    randomShootingStars(night);
 });
 
 /**
  * Updates sun sprite position on screen according to real time sun position.
- * @param {Object} curPos
- * @param {Object} sunrisePos
- * @param {Object} noonPos
+ * @param {object} curPos
+ * @param {object} sunrisePos
+ * @param {object} noonPos
  */
 function sunUpdate(curPos, sunrisePos, noonPos) {
 
@@ -152,25 +152,24 @@ function skyUpdate(windows, idx, times) {
     if (times.now >= beginTransition) {
         const progress = (times.now - beginTransition) / (times.end - beginTransition);
 
-        const color1 = interpolationColorStr(
-            progress, windows[idx.cur].colors[0], windows[idx.next].colors[0]
-        );
-        const color2 = interpolationColorStr(
-            progress, windows[idx.cur].colors[1], windows[idx.next].colors[1]
-        );
-        sky.texture = createSkyTexture([color1, color2]);
+        const topColor = interpolationColorStr(
+            windows[idx.cur].colors[0], windows[idx.next].colors[0], progress);
+        const bottomColor = interpolationColorStr(
+            windows[idx.cur].colors[1], windows[idx.next].colors[1], progress);
+
+        sky.texture = createSkyTexture(topColor, bottomColor);
     }
 }
 
-function randomShootingStars(night) {
-}
-
 /**
+ * Creates a vertical gradient texture used for sky sprite.
  * https://pixijs.io/examples/#/textures/gradient-basic.js
- * @param {Array<string>} colorsStr
+ * @param {string} topColor
+ * @param {string} bottomColor
  * @return {PIXI.Texture}
  */
-function createSkyTexture(colorsStr) {
+function createSkyTexture(topColor, bottomColor) {
+
     const canvas = document.createElement('canvas');
     canvas.width = sceneWidth;
     canvas.height = sceneHeight;
@@ -178,8 +177,8 @@ function createSkyTexture(colorsStr) {
     const ctx = canvas.getContext('2d');
 
     const grd = ctx.createLinearGradient(0, 0, 0, sceneHeight);
-    grd.addColorStop(0.1, colorsStr[0]);
-    grd.addColorStop(0.7, colorsStr[1]);
+    grd.addColorStop(0.1, topColor);
+    grd.addColorStop(0.7, bottomColor);
 
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, sceneWidth, sceneHeight);
@@ -188,42 +187,38 @@ function createSkyTexture(colorsStr) {
 }
 
 /**
- * https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
- * @param {string} hexStr
+ * Given a gradient starting with colorStart and ending with colorEnd,
+ * returns the color in that gradient associated with the percentage in argument.
+ * https://stackoverflow.com/questions/22218140/calculate-the-color-at-a-given-point-on-a-gradient-between-two-colors
+ * @param {number} percentage
+ * @param {string} startColor
+ * @param {string} endColor
+ * @return {string}
+ */
+function interpolationColorStr(startColor, endColor, percentage) {
+
+    // gets each color components
+    const colorStartComp = rgbComp(startColor);
+    const colorEndComp = rgbComp(endColor);
+
+    // processes interpolation color components
+    const r = colorStartComp.r + percentage * (colorEndComp.r - colorStartComp.r);
+    const g = colorStartComp.g + percentage * (colorEndComp.g - colorStartComp.g);
+    const b = colorStartComp.b + percentage * (colorEndComp.b - colorStartComp.b);
+
+    // returns the css rgb color string
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+/**
+ * Returns the rgb components of a css rgb color string.
+ * https://stackoverflow.com/questions/10970958/get-a-color-component-from-an-rgb-string-in-javascript
+ * @param {string} color
  * @return {{r: number, b: number, g: number}}
  */
-function hexToRgbObj(hexStr) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hexStr);
-    if (result) {
-        return {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16),
-        }
-    } else {
-        throw new Error("can't parse hex data");
-    }
-}
-
-/**
- * https://stackoverflow.com/questions/22218140/calculate-the-color-at-a-given-point-on-a-gradient-between-two-colors
- * @param {number} percent
- * @param {{r: number, b: number, g: number}} colorStart
- * @param {{r: number, b: number, g: number}} colorEnd
- * @return {string}
- */
-function interpolationColorStr(percent, colorStart, colorEnd) {
-    const r = colorStart.r + percent * (colorEnd.r - colorStart.r);
-    const g = colorStart.g + percent * (colorEnd.g - colorStart.g);
-    const b = colorStart.b + percent * (colorEnd.b - colorStart.b);
-    return rgbObjToString({ r: r, g: g, b: b });
-}
-
-/**
- * Returns the css string of a rgb color object.
- * @param {{r: number, b: number, g: number}} color
- * @return {string}
- */
-function rgbObjToString(color) {
-    return 'rgb(' + color.r + ',' + color.g + ',' + color.b + ')';
+function rgbComp(color) {
+    let rgb = color.replace(/[^\d,]/g, '').split(',').map((e) => {
+        return parseInt(e);
+    });
+    return { r: rgb[0], g: rgb[1], b: rgb[2] };
 }
