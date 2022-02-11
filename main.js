@@ -47,15 +47,18 @@ app.stage.addChildAt(sea, 2);
 let counter = 0;
 app.ticker.add(() => {
 
+    // getting today time and events
     let today = new Date();
-    today.setTime(today.getTime() + 60000 * counter);
+    today.setTime(today.getTime() + 60000 * counter); // time acceleration
     counter++;
     const events = SunCalc.getTimes(today, latitude, longitude);
 
+    // getting tomorrow time and events
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomEvents = SunCalc.getTimes(tomorrow, latitude, longitude);
 
+    // getting yesterday time and events
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     const yestEvents = SunCalc.getTimes(yesterday, latitude, longitude);
@@ -70,7 +73,7 @@ app.ticker.add(() => {
         { skyTexture: skyTextures.sunrise, colors: skyColors.sunrise, start: events.dawn.getTime() },
         { skyTexture: skyTextures.day, colors: skyColors.day, start: events.sunriseEnd.getTime() },
         { skyTexture: skyTextures.sunset, colors: skyColors.sunset, start: events.sunsetStart.getTime() },
-        { skyTexture: skyTextures.night, colors: skyColors.night, start: events.sunset.getTime() },
+        { skyTexture: skyTextures.night, colors: skyColors.night, start: events.dusk.getTime() },
     ];
 
     // finding the current time window
@@ -88,7 +91,6 @@ app.ticker.add(() => {
         start: 0, // current window starting time
         end: 0, // current window ending time
     };
-
     while (idx.cur < windows.length && !found) {
 
         idx.next = (idx.cur + 1) % windows.length; // loops through the array
@@ -99,19 +101,17 @@ app.ticker.add(() => {
         // at night, the window can end on tomorrow's dawn
         // and begin on yesterday's sunset
         let hour = today.getHours();
-        if (night && hour > 12) {
+        if (night && (hour > 12 || hour < 1)) {
             times.end = tomEvents.dawn.getTime();
         } else if (night) {
             times.start = yestEvents.sunset.getTime();
         }
-        if (times.start <= times.now &&
-            times.now < times.end) {
+        if (times.start <= times.now && times.now < times.end) {
             found = true;
         }
         idx.cur++;
     }
     idx.cur--;
-    console.log(times.end === windows[idx.next].start);
 
     // canvas elements updates
     sunUpdate(curPos, sunrisePos, noonPos);
@@ -152,10 +152,10 @@ function skyUpdate(windows, idx, times) {
     if (times.now >= beginTransition) {
         const progress = (times.now - beginTransition) / (times.end - beginTransition);
 
-        const color1 = getInterpolationColorStr(
+        const color1 = interpolationColorStr(
             progress, windows[idx.cur].colors[0], windows[idx.next].colors[0]
         );
-        const color2 = getInterpolationColorStr(
+        const color2 = interpolationColorStr(
             progress, windows[idx.cur].colors[1], windows[idx.next].colors[1]
         );
         sky.texture = createSkyTexture([color1, color2]);
@@ -212,7 +212,7 @@ function hexToRgbObj(hexStr) {
  * @param {{r: number, b: number, g: number}} colorEnd
  * @return {string}
  */
-function getInterpolationColorStr(percent, colorStart, colorEnd) {
+function interpolationColorStr(percent, colorStart, colorEnd) {
     const r = colorStart.r + percent * (colorEnd.r - colorStart.r);
     const g = colorStart.g + percent * (colorEnd.g - colorStart.g);
     const b = colorStart.b + percent * (colorEnd.b - colorStart.b);
