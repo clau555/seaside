@@ -3,11 +3,15 @@ const sceneWidth = 256;
 const sceneHeight = 144;
 const seaLevel = 120;
 
+// geographic position config
+const latitude = 54;
+const longitude = -6.41667;
+
 // sky colors config
 const skyColors = {
     sunrise: [ 'rgb(63, 144, 208)', 'rgb(255, 194, 117)' ],
     day: [ 'rgb(42, 207, 255)', 'rgb(181, 255, 246)' ],
-    sunset: [ 'rgb(196, 46, 12)', 'rgb(251, 201, 3)' ],
+    sunset: [ 'rgb(90,40,145)', 'rgb(255,162,24)' ],
     night: [ 'rgb(8, 0, 30)', 'rgb(50, 39, 119)' ],
 };
 const skyTextures = {
@@ -17,31 +21,43 @@ const skyTextures = {
     night: createSkyTexture(skyColors.night[0], skyColors.night[1]),
 };
 
-// geographic position config
-const latitude = 54;
-const longitude = -6.41667;
-
 // sky
 const sky = new PIXI.Sprite(skyTextures.day);
+
+// stars
+/*const stars = [];
+for (let i = 0; i < 4; i++) {
+    const star = PIXI.Sprite.from('/assests/img/star.png');
+    star.anchor.set(0.5);
+    stars.push(star);
+}*/
 
 // sun
 const sun = PIXI.Sprite.from('/assets/img/sun.png');
 sun.anchor.set(0.5); // makes sun coordinates centered on its sprite
 
 // sea
-let sea = new PIXI.AnimatedSprite(['/assets/img/sea/1.png', '/assets/img/sea/2.png'].map((e) => {
+const sea = new PIXI.AnimatedSprite(['/assets/img/sea/1.png', '/assets/img/sea/2.png'].map((e) => {
     return PIXI.Texture.from(e);
 }));
 sea.y = seaLevel; // places sea sprite on the correct height
 sea.animationSpeed = 0.02;
 sea.play();
 
+// front sprites group
+const front = new PIXI.Container();
+front.addChild(sea);
+
+// front sprites luminosity
+const frontBrightness = new PIXI.filters.ColorMatrixFilter();
+front.filters = [frontBrightness];
+
 // stage initialization
 const app = new PIXI.Application({width: sceneWidth, height: sceneHeight});
 document.body.appendChild(app.view);
 app.stage.addChildAt(sky, 0);
 app.stage.addChildAt(sun, 1);
-app.stage.addChildAt(sea, 2);
+app.stage.addChildAt(front, 2);
 
 // main loop
 let counter = 0;
@@ -70,16 +86,16 @@ app.ticker.add(() => {
 
     // windows of the different phases of the day
     const windows = [
-        { skyTexture: skyTextures.sunrise, colors: skyColors.sunrise, start: events.dawn.getTime() },
-        { skyTexture: skyTextures.day, colors: skyColors.day, start: events.sunriseEnd.getTime() },
-        { skyTexture: skyTextures.sunset, colors: skyColors.sunset, start: events.sunsetStart.getTime() },
-        { skyTexture: skyTextures.night, colors: skyColors.night, start: events.dusk.getTime() },
+        { name: "sunrise", skyTexture: skyTextures.sunrise, colors: skyColors.sunrise, brightness: 0.6, start: events.dawn.getTime() },
+        { name: "day", skyTexture: skyTextures.day, colors: skyColors.day, brightness: 1, start: events.sunriseEnd.getTime() },
+        { name: "sunset", skyTexture: skyTextures.sunset, colors: skyColors.sunset, brightness: 0.6, start: events.sunsetStart.getTime() },
+        { name: "night", skyTexture: skyTextures.night, colors: skyColors.night, brightness: 0.2, start: events.dusk.getTime() },
     ];
 
-    // finding the current time window
+    // finding the current window
 
-    let found = false; // true when the current window has been found
-    let night = false; // true if the current window is nighttime
+    let found = false;
+    let night = false;
 
     const idx = {
         cur: 0, // current window index
@@ -91,36 +107,40 @@ app.ticker.add(() => {
         start: 0, // current window starting time
         end: 0, // current window ending time
     };
+
     while (!found && idx.cur < windows.length) {
 
         idx.next = (idx.cur + 1) % windows.length; // loops through the array
         times.start = windows[idx.cur].start;
         times.end = windows[idx.next].start;
-        night = idx.cur + 1 === windows.length;
+        night = windows[idx.cur].name === "night";
 
         // at night, the window can end on tomorrow's dawn
         // and begin on yesterday's sunset
         let hour = today.getHours();
-        if (night && (hour > 12 || hour < 1)) {
+
+        if (night && (hour > 12 || hour < 1))
             times.end = tomEvents.dawn.getTime();
-        }
-        else if (night) {
+
+        else if (night)
             times.start = yestEvents.sunset.getTime();
-        }
-        if (times.start <= times.now && times.now < times.end) {
+
+        if (times.start <= times.now && times.now < times.end)
             found = true;
-        }
+
         idx.cur++;
     }
     idx.cur--;
 
     // canvas elements updates
     sunUpdate(curPos, sunrisePos, noonPos);
-    skyUpdate(windows, idx, times);
+    skyUpdate(times, windows, idx);
+    luminosityUpdate(times, windows, idx);
 });
 
 /**
  * Updates sun sprite position on screen according to real time sun position.
+ *
  * @param {object} curPos
  * @param {object} sunrisePos
  * @param {object} noonPos
@@ -137,24 +157,29 @@ function sunUpdate(curPos, sunrisePos, noonPos) {
 
 /**
  * Updates sun colors and texture.
- * @param {Object} windows
- * @param {Object} idx
- * @param {Object} times
+ *
+ * @param {{now: number, start: number, end: number}} windowTimes
+ * @param {{name: string, skyTexture: PIXI.Texture, start: number, brightness: number, colors: string[]}[]} windows
+ * @param {{cur: number, next: number}} idx
  */
-function skyUpdate(windows, idx, times) {
+function skyUpdate(windowTimes, windows, idx) {
 
     // the sky takes the texture of the current window
     sky.texture = windows[idx.cur].skyTexture;
 
+    // saving current sky colors
+    let topColor = windows[idx.cur].colors[0];
+    let bottomColor = windows[idx.cur].colors[1];
+
     // color transition begins when the current time window has reached 98% of its progression
-    const beginTransition = times.start + (times.end - times.start) * 0.98;
+    const beginTransition = windowTimes.start + (windowTimes.end - windowTimes.start) * 0.98;
 
-    if (times.now >= beginTransition) {
-        const progress = (times.now - beginTransition) / (times.end - beginTransition);
+    if (windowTimes.now >= beginTransition) {
+        const progress = (windowTimes.now - beginTransition) / (windowTimes.end - beginTransition);
 
-        const topColor = interpolationColorStr(
+        topColor = interpolationColor(
             windows[idx.cur].colors[0], windows[idx.next].colors[0], progress);
-        const bottomColor = interpolationColorStr(
+        bottomColor = interpolationColor(
             windows[idx.cur].colors[1], windows[idx.next].colors[1], progress);
 
         sky.texture = createSkyTexture(topColor, bottomColor);
@@ -162,8 +187,30 @@ function skyUpdate(windows, idx, times) {
 }
 
 /**
+ * Updates ambiant light.
+ *
+ * @param {{now: number, start: number, end: number}} windowTimes
+ * @param {{name: string, skyTexture: PIXI.Texture, start: number, brightness: number, colors: string[]}[]} windows
+ * @param {{cur: number, next: number}} idx
+ */
+function luminosityUpdate(windowTimes, windows, idx) {
+
+    frontBrightness.brightness(windows[idx.cur].brightness);
+
+    const beginTransition = windowTimes.start + (windowTimes.end - windowTimes.start) * 0.98;
+
+    if (windowTimes.now >= beginTransition) {
+        const progress = (windowTimes.now - beginTransition) / (windowTimes.end - beginTransition);
+        const dist = windows[idx.next].brightness - windows[idx.cur].brightness;
+        frontBrightness.brightness(windows[idx.cur].brightness + dist * progress);
+    }
+}
+
+/**
  * Creates a vertical gradient texture used for sky sprite.
+ *
  * https://pixijs.io/examples/#/textures/gradient-basic.js
+ *
  * @param {string} topColor
  * @param {string} bottomColor
  * @return {PIXI.Texture}
@@ -189,13 +236,15 @@ function createSkyTexture(topColor, bottomColor) {
 /**
  * Given a gradient starting with colorStart and ending with colorEnd,
  * returns the color in that gradient associated with the percentage in argument.
+ *
  * https://stackoverflow.com/questions/22218140/calculate-the-color-at-a-given-point-on-a-gradient-between-two-colors
+ *
  * @param {number} percentage
  * @param {string} startColor
  * @param {string} endColor
  * @return {string}
  */
-function interpolationColorStr(startColor, endColor, percentage) {
+function interpolationColor(startColor, endColor, percentage) {
 
     // gets each color components
     const colorStartComp = rgbComp(startColor);
@@ -212,7 +261,9 @@ function interpolationColorStr(startColor, endColor, percentage) {
 
 /**
  * Returns the rgb components of a css rgb color string.
+ *
  * https://stackoverflow.com/questions/10970958/get-a-color-component-from-an-rgb-string-in-javascript
+ *
  * @param {string} color
  * @return {{r: number, b: number, g: number}}
  */
@@ -221,4 +272,23 @@ function rgbComp(color) {
         return parseInt(e);
     });
     return { r: rgb[0], g: rgb[1], b: rgb[2] };
+}
+
+/**
+ * Returns the hexadecimal value of a rgb color string.
+ *
+ * https://stackoverflow.com/questions/13070054/convert-rgb-strings-to-hex-in-javascript
+ *
+ * @param {string} color
+ * @return {number}
+ */
+function colorToHex(color) {
+    let rgb = color.split('(')[1].split(')')[0];
+    rgb = rgb.split(',');
+    let hex = rgb.map((x) => {
+        x = parseInt(x).toString(16);
+        return (x.length === 1) ? '0' + x : x;
+    });
+    hex = hex.join('');
+    return parseInt(hex, 16);
 }
