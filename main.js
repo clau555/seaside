@@ -1,95 +1,105 @@
 // screen composition config
-const sceneWidth = 256;
-const sceneHeight = 144;
-const seaLevel = 120;
+const WIDTH = 256;
+const HEIGHT = 144;
+const SEA_LEVEL = 120;
 
 // geographic position config
-const latitude = 54;
-const longitude = -6.41667;
+const LAT = 54;
+const LONG = -6.41667;
+
+// window progression percentage at which the
+// color transition to the next window begins
+const TRANSITION = 0.98;
 
 // sky colors config
-const skyColors = {
+const SKY_COLORS = {
     sunrise: [ 'rgb(63, 144, 208)', 'rgb(255, 194, 117)' ],
     day: [ 'rgb(42, 207, 255)', 'rgb(181, 255, 246)' ],
-    sunset: [ 'rgb(90,40,145)', 'rgb(255,162,24)' ],
+    sunset: [ 'rgb(68,0,39)', 'rgb(255,155,24)' ],
     night: [ 'rgb(8, 0, 30)', 'rgb(50, 39, 119)' ],
 };
-const skyTextures = {
-    sunrise: createSkyTexture(skyColors.sunrise[0], skyColors.sunrise[1]),
-    day: createSkyTexture(skyColors.day[0], skyColors.day[1]),
-    sunset: createSkyTexture(skyColors.sunset[0], skyColors.sunset[1]),
-    night: createSkyTexture(skyColors.night[0], skyColors.night[1]),
+const SKY_TEXT = {
+    sunrise: createSkyTexture(SKY_COLORS.sunrise[0], SKY_COLORS.sunrise[1]),
+    day: createSkyTexture(SKY_COLORS.day[0], SKY_COLORS.day[1]),
+    sunset: createSkyTexture(SKY_COLORS.sunset[0], SKY_COLORS.sunset[1]),
+    night: createSkyTexture(SKY_COLORS.night[0], SKY_COLORS.night[1]),
 };
 
 // sky
-const sky = new PIXI.Sprite(skyTextures.day);
+const SKY = new PIXI.Sprite(SKY_TEXT.day);
 
 // stars
-/*const stars = [];
-for (let i = 0; i < 4; i++) {
-    const star = PIXI.Sprite.from('/assests/img/star.png');
-    star.anchor.set(0.5);
-    stars.push(star);
-}*/
+const STARS = new PIXI.Container();
+const STAR_SPRITES = ['/assets/img/star_1.png', '/assets/img/star_2.png'];
+const STAR_NUMBER = 60;
+const SPAWN_AMPLITUDE = 2 * HEIGHT / 3;
+for (let i = 0; i < STAR_NUMBER; i++) {
+    const star = PIXI.Sprite.from(STAR_SPRITES[~~(Math.random() * STAR_SPRITES.length)]);
+    star.x = ~~(i / STAR_NUMBER * WIDTH) + 1;
+    star.y = ~~(Math.random() * SPAWN_AMPLITUDE);
+    star.alpha = (SPAWN_AMPLITUDE - star.y) / SPAWN_AMPLITUDE;
+    STARS.addChild(star);
+}
 
 // sun
-const sun = PIXI.Sprite.from('/assets/img/sun.png');
-sun.anchor.set(0.5); // makes sun coordinates centered on its sprite
+const SUN = PIXI.Sprite.from('/assets/img/sun.png');
+SUN.anchor.set(0.5); // makes sun coordinates centered on its sprite
 
 // sea
-const sea = new PIXI.AnimatedSprite(['/assets/img/sea/1.png', '/assets/img/sea/2.png'].map((e) => {
+const SEA = new PIXI.AnimatedSprite(['/assets/img/sea/1.png', '/assets/img/sea/2.png'].map((e) => {
     return PIXI.Texture.from(e);
 }));
-sea.y = seaLevel; // places sea sprite on the correct height
-sea.animationSpeed = 0.02;
-sea.play();
+SEA.y = SEA_LEVEL; // places sea sprite on the correct height
+SEA.animationSpeed = 0.02;
+SEA.play();
 
 // front sprites group
-const front = new PIXI.Container();
-front.addChild(sea);
+const FRONT = new PIXI.Container();
+FRONT.addChild(SEA);
 
-// front sprites luminosity
-const frontBrightness = new PIXI.filters.ColorMatrixFilter();
-front.filters = [frontBrightness];
+// front sprites brightness filter
+const FILTER = new PIXI.filters.ColorMatrixFilter();
+FRONT.filters = [FILTER];
 
 // stage initialization
-const app = new PIXI.Application({width: sceneWidth, height: sceneHeight});
-document.body.appendChild(app.view);
-app.stage.addChildAt(sky, 0);
-app.stage.addChildAt(sun, 1);
-app.stage.addChildAt(front, 2);
+const APP = new PIXI.Application({width: WIDTH, height: HEIGHT});
+document.body.appendChild(APP.view);
+APP.stage.addChildAt(SKY, 0);
+APP.stage.addChildAt(STARS, 1);
+APP.stage.addChildAt(SUN, 2);
+APP.stage.addChildAt(FRONT, 3);
 
 // main loop
 let counter = 0;
-app.ticker.add(() => {
+APP.ticker.add(() => {
 
     // getting today time and events
     const today = new Date();
     today.setTime(today.getTime() + 60000 * counter); // time speed up
     counter++;
-    const events = SunCalc.getTimes(today, latitude, longitude);
+    const events = SunCalc.getTimes(today, LAT, LONG);
 
     // getting tomorrow time and events
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomEvents = SunCalc.getTimes(tomorrow, latitude, longitude);
+    const tomEvents = SunCalc.getTimes(tomorrow, LAT, LONG);
 
     // getting yesterday time and events
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    const yestEvents = SunCalc.getTimes(yesterday, latitude, longitude);
+    const yestEvents = SunCalc.getTimes(yesterday, LAT, LONG);
 
     // sun angle position in the sky at different times of the day
-    const sunrisePos = SunCalc.getPosition(events.sunrise, latitude, longitude);
-    const noonPos = SunCalc.getPosition(events.solarNoon, latitude, longitude);
-    const curPos = SunCalc.getPosition(today, latitude, longitude);
+    const sunrisePos = SunCalc.getPosition(events.sunrise, LAT, LONG);
+    const noonPos = SunCalc.getPosition(events.solarNoon, LAT, LONG);
+    const curPos = SunCalc.getPosition(today, LAT, LONG);
 
     // windows of the different phases of the day
     const windows = [
-        { name: "sunrise", skyTexture: skyTextures.sunrise, colors: skyColors.sunrise, brightness: 0.6, start: events.dawn.getTime() },
-        { name: "day", skyTexture: skyTextures.day, colors: skyColors.day, brightness: 1, start: events.sunriseEnd.getTime() },
-        { name: "sunset", skyTexture: skyTextures.sunset, colors: skyColors.sunset, brightness: 0.6, start: events.sunsetStart.getTime() },
-        { name: "night", skyTexture: skyTextures.night, colors: skyColors.night, brightness: 0.2, start: events.dusk.getTime() },
+        { name: "sunrise", skyTexture: SKY_TEXT.sunrise, colors: SKY_COLORS.sunrise, brightness: 0.6, start: events.dawn.getTime() },
+        { name: "day", skyTexture: SKY_TEXT.day, colors: SKY_COLORS.day, brightness: 1, start: events.sunriseEnd.getTime() },
+        { name: "sunset", skyTexture: SKY_TEXT.sunset, colors: SKY_COLORS.sunset, brightness: 0.6, start: events.sunsetStart.getTime() },
+        { name: "night", skyTexture: SKY_TEXT.night, colors: SKY_COLORS.night, brightness: 0.2, start: events.dusk.getTime() },
     ];
 
     // finding the current window
@@ -134,6 +144,7 @@ app.ticker.add(() => {
 
     // canvas elements updates
     sunUpdate(curPos, sunrisePos, noonPos);
+    starsUpdate(times, windows, idx);
     skyUpdate(times, windows, idx);
     luminosityUpdate(times, windows, idx);
 });
@@ -151,8 +162,49 @@ function sunUpdate(curPos, sunrisePos, noonPos) {
     const azimuthOffset = Math.abs(sunrisePos.azimuth) + 0.1;
 
     // updates the sun sprite coordinates making it describe a parabolic movement through the day
-    sun.x = ~~(sceneWidth * ((curPos.azimuth + azimuthOffset) % (azimuthOffset * 2)) / (azimuthOffset * 2));
-    sun.y = ~~(seaLevel - (seaLevel - 10) * curPos.altitude / noonPos.altitude);
+    SUN.x = ~~(WIDTH * ((curPos.azimuth + azimuthOffset) % (azimuthOffset * 2)) / (azimuthOffset * 2));
+    SUN.y = ~~(SEA_LEVEL - (SEA_LEVEL - 10) * curPos.altitude / noonPos.altitude);
+}
+
+/**
+ * Updates stars appearance.
+ *
+ * @param {{now: number, start: number, end: number}} windowTimes
+ * @param {{name: string, skyTexture: PIXI.Texture, start: number, brightness: number, colors: string[]}[]} windows
+ * @param {{cur: number, next: number}} idx
+ */
+function starsUpdate(windowTimes, windows, idx) {
+    const windowDuration = windowTimes.end - windowTimes.start;
+    const now = windowTimes.now - windowTimes.start;
+
+    // stars visibility
+    STARS.visible = true;
+    switch (windows[idx.cur].name) {
+
+        case "sunrise":
+            STARS.alpha = 1 - now / windowDuration;
+            break;
+
+        case "sunset":
+            STARS.alpha = now / windowDuration;
+            break;
+
+        case "day":
+            STARS.visible = false;
+            break;
+    }
+
+    // stars twinkling
+    if (STARS.visible) {
+        for (let i = 0; i < STAR_NUMBER; i++) {
+            if (!~~(Math.random() * 40)) {
+                const star = STARS.getChildAt(i);
+                const originalAlpha = (SPAWN_AMPLITUDE - star.y) / SPAWN_AMPLITUDE;
+                const offsetAlpha = Math.random() / 4;
+                star.alpha = originalAlpha - offsetAlpha;
+            }
+        }
+    }
 }
 
 /**
@@ -165,14 +217,14 @@ function sunUpdate(curPos, sunrisePos, noonPos) {
 function skyUpdate(windowTimes, windows, idx) {
 
     // the sky takes the texture of the current window
-    sky.texture = windows[idx.cur].skyTexture;
+    SKY.texture = windows[idx.cur].skyTexture;
 
     // saving current sky colors
     let topColor = windows[idx.cur].colors[0];
     let bottomColor = windows[idx.cur].colors[1];
 
     // color transition begins when the current time window has reached 98% of its progression
-    const beginTransition = windowTimes.start + (windowTimes.end - windowTimes.start) * 0.98;
+    const beginTransition = windowTimes.start + (windowTimes.end - windowTimes.start) * TRANSITION;
 
     if (windowTimes.now >= beginTransition) {
         const progress = (windowTimes.now - beginTransition) / (windowTimes.end - beginTransition);
@@ -182,7 +234,7 @@ function skyUpdate(windowTimes, windows, idx) {
         bottomColor = interpolationColor(
             windows[idx.cur].colors[1], windows[idx.next].colors[1], progress);
 
-        sky.texture = createSkyTexture(topColor, bottomColor);
+        SKY.texture = createSkyTexture(topColor, bottomColor);
     }
 }
 
@@ -195,14 +247,14 @@ function skyUpdate(windowTimes, windows, idx) {
  */
 function luminosityUpdate(windowTimes, windows, idx) {
 
-    frontBrightness.brightness(windows[idx.cur].brightness);
+    FILTER.brightness(windows[idx.cur].brightness);
 
-    const beginTransition = windowTimes.start + (windowTimes.end - windowTimes.start) * 0.98;
+    const beginTransition = windowTimes.start + (windowTimes.end - windowTimes.start) * TRANSITION;
 
     if (windowTimes.now >= beginTransition) {
         const progress = (windowTimes.now - beginTransition) / (windowTimes.end - beginTransition);
         const dist = windows[idx.next].brightness - windows[idx.cur].brightness;
-        frontBrightness.brightness(windows[idx.cur].brightness + dist * progress);
+        FILTER.brightness(windows[idx.cur].brightness + dist * progress);
     }
 }
 
@@ -218,17 +270,17 @@ function luminosityUpdate(windowTimes, windows, idx) {
 function createSkyTexture(topColor, bottomColor) {
 
     const canvas = document.createElement('canvas');
-    canvas.width = sceneWidth;
-    canvas.height = sceneHeight;
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
 
     const ctx = canvas.getContext('2d');
 
-    const grd = ctx.createLinearGradient(0, 0, 0, sceneHeight);
+    const grd = ctx.createLinearGradient(0, 0, 0, HEIGHT);
     grd.addColorStop(0.1, topColor);
     grd.addColorStop(0.7, bottomColor);
 
     ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, sceneWidth, sceneHeight);
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
     return PIXI.Texture.from(canvas);
 }
@@ -272,23 +324,4 @@ function rgbComp(color) {
         return parseInt(e);
     });
     return { r: rgb[0], g: rgb[1], b: rgb[2] };
-}
-
-/**
- * Returns the hexadecimal value of a rgb color string.
- *
- * https://stackoverflow.com/questions/13070054/convert-rgb-strings-to-hex-in-javascript
- *
- * @param {string} color
- * @return {number}
- */
-function colorToHex(color) {
-    let rgb = color.split('(')[1].split(')')[0];
-    rgb = rgb.split(',');
-    let hex = rgb.map((x) => {
-        x = parseInt(x).toString(16);
-        return (x.length === 1) ? '0' + x : x;
-    });
-    hex = hex.join('');
-    return parseInt(hex, 16);
 }
