@@ -32,24 +32,37 @@ const SKY = new PIXI.Sprite(SKY_TEXT.day);
 const STARS = new PIXI.Container();
 const STAR_SPRITES = ['/assets/img/star_1.png', '/assets/img/star_2.png'];
 const STAR_NUMBER = 60;
-const SPAWN_AMPLITUDE = 2 * HEIGHT / 3;
+const STARS_SPAWN_HEIGHT = 2 * HEIGHT / 3;
 for (let i = 0; i < STAR_NUMBER; i++) {
     const star = PIXI.Sprite.from(STAR_SPRITES[~~(Math.random() * STAR_SPRITES.length)]);
     star.x = ~~(i / STAR_NUMBER * WIDTH) + 1;
-    star.y = ~~(Math.random() * SPAWN_AMPLITUDE);
-    star.alpha = (SPAWN_AMPLITUDE - star.y) / SPAWN_AMPLITUDE;
+    star.y = ~~(Math.random() * STARS_SPAWN_HEIGHT);
+    star.alpha = starAlpha(star.y);
     STARS.addChild(star);
 }
 
+// shooting star
+const SHOOTING_STAR_SPRITES = [
+    '/assets/img/shooting_star/1.png',
+    '/assets/img/shooting_star/2.png',
+    '/assets/img/shooting_star/3.png',
+    '/assets/img/shooting_star/4.png',
+    '/assets/img/shooting_star/5.png',
+];
+const SHOOTING_STAR_TEXT = SHOOTING_STAR_SPRITES.map((e) => {
+    return PIXI.Texture.from(e);
+});
+
 // sun
 const SUN = PIXI.Sprite.from('/assets/img/sun.png');
-SUN.anchor.set(0.5); // makes sun coordinates centered on its sprite
+SUN.anchor.set(0.5);
 
 // sea
-const SEA = new PIXI.AnimatedSprite(['/assets/img/sea/1.png', '/assets/img/sea/2.png'].map((e) => {
+const SEA_SPRITES = ['/assets/img/sea/1.png', '/assets/img/sea/2.png'];
+const SEA = new PIXI.AnimatedSprite(SEA_SPRITES.map((e) => {
     return PIXI.Texture.from(e);
 }));
-SEA.y = SEA_LEVEL; // places sea sprite on the correct height
+SEA.y = SEA_LEVEL;
 SEA.animationSpeed = 0.02;
 SEA.play();
 
@@ -144,6 +157,7 @@ APP.ticker.add(() => {
 
     // canvas elements updates
     sunUpdate(curPos, sunrisePos, noonPos);
+    spawnShootingStar(night);
     starsUpdate(times, windows, idx);
     skyUpdate(times, windows, idx);
     luminosityUpdate(times, windows, idx);
@@ -164,6 +178,29 @@ function sunUpdate(curPos, sunrisePos, noonPos) {
     // updates the sun sprite coordinates making it describe a parabolic movement through the day
     SUN.x = ~~(WIDTH * ((curPos.azimuth + azimuthOffset) % (azimuthOffset * 2)) / (azimuthOffset * 2));
     SUN.y = ~~(SEA_LEVEL - (SEA_LEVEL - 10) * curPos.altitude / noonPos.altitude);
+}
+
+/**
+ * Spawns shooting star in the sky at night at random coordinates.
+ *
+ * @param {boolean} night
+ */
+function spawnShootingStar(night) {
+    if (night && !~~(Math.random() * 200)) {
+        const shootingStar = new PIXI.AnimatedSprite(SHOOTING_STAR_TEXT);
+
+        shootingStar.loop = false;
+        shootingStar.animationSpeed = 0.8;
+        shootingStar.x = ~~(Math.random() * WIDTH);
+        shootingStar.y = ~~(Math.random() * STARS_SPAWN_HEIGHT);
+
+        APP.stage.addChildAt(shootingStar, 1);
+        shootingStar.onComplete = () => {
+            shootingStar.destroy();
+        };
+
+        shootingStar.play();
+    }
 }
 
 /**
@@ -199,7 +236,7 @@ function starsUpdate(windowTimes, windows, idx) {
         for (let i = 0; i < STAR_NUMBER; i++) {
             if (!~~(Math.random() * 40)) {
                 const star = STARS.getChildAt(i);
-                const originalAlpha = (SPAWN_AMPLITUDE - star.y) / SPAWN_AMPLITUDE;
+                const originalAlpha = starAlpha(star.y);
                 const offsetAlpha = Math.random() / 4;
                 star.alpha = originalAlpha - offsetAlpha;
             }
@@ -256,6 +293,17 @@ function luminosityUpdate(windowTimes, windows, idx) {
         const dist = windows[idx.next].brightness - windows[idx.cur].brightness;
         FILTER.brightness(windows[idx.cur].brightness + dist * progress);
     }
+}
+
+/**
+ * Returns the appropriate alpha transparency
+ * of a star sprite according to its height.
+ *
+ * @param {number} y
+ * @return {number}
+ */
+function starAlpha(y) {
+    return (STARS_SPAWN_HEIGHT - y) / STARS_SPAWN_HEIGHT;
 }
 
 /**
