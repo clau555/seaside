@@ -1,18 +1,18 @@
-// screen composition config
+// screen composition
 const WIDTH = 256;
 const HEIGHT = 144;
 const SEA_LEVEL = 120;
 
-// geographic position config
+// geographic position
 const LAT = 54;
 const LONG = -6.41667;
 
 // sky colors gradients
 const GRAD_LENGTH = 512; // length in pixels
 const GRAD_HEIGHT = 1;
-const GRAD_TRANSITION = 0.03; // transition between phases in %
+const GRAD_TRANSITION = 0.03; // transition duration between phases in %
 
-// sky colors config
+// sky colors
 const SKY_COLORS = {
     sunrise: [ 'rgb(63, 144, 208)', 'rgb(255, 194, 117)' ],
     day: [ 'rgb(42, 207, 255)', 'rgb(181, 255, 246)' ],
@@ -34,8 +34,14 @@ for (let i = 0; i < STAR_NUMBER; i++) {
     star.x = ~~(i / STAR_NUMBER * WIDTH) + 1;
     star.y = ~~(Math.random() * STARS_SPAWN_HEIGHT);
     star.alpha = starAlpha(star.y);
+    star.visible = false;
     STARS.addChild(star);
 }
+const RAND_STAR_INDEXES = Array
+    .apply(null, {length: STAR_NUMBER})
+    .map((_, i) => i);
+shuffleArray(RAND_STAR_INDEXES);
+const STARS_APPEAR_SPEED = 20; // number of frames between stars appearing/disappearing
 
 // shooting star
 const SHOOTING_STAR_SPRITES = [
@@ -84,13 +90,16 @@ let counter = 0;
 let lastNow = new Date();
 let init = true; // true on first loop, false after
 let gradients = [];
+let progressions = {
+    sunrise: 0,
+    day: 0,
+    sunset: 0,
+    night: 0,
+    now: 0,
+};
 
-APP.ticker.add(main);
-
-/**
- * Main loop.
- */
-function main() {
+// main loop
+APP.ticker.add(() => {
 
     if (DEBUG && init) console.time();
 
@@ -118,8 +127,13 @@ function main() {
 
     // recalculates sky gradients every new day
     if (now.getDate() > lastNow.getDate() || init) {
-        gradients = createSkyGradients(events);
+        progressions.sunrise = dayProgression(events.dawn);
+        progressions.day = dayProgression(events.sunriseEnd);
+        progressions.sunset = dayProgression(events.sunsetStart);
+        progressions.night = dayProgression(events.dusk);
+        gradients = createSkyGradients(events, progressions);
     }
+    progressions.now = dayProgression(now);
 
     // current date's midnight
     const midnight = new Date(now);
@@ -146,20 +160,24 @@ function main() {
 
     if (!found) throw new Error("Could not find current window.");
 
-    const night = windows[i].phase === "night";
+    let visibleStars = false;
+    if (progressions.now >= (progressions.night - GRAD_TRANSITION) ||
+        progressions.now <= progressions.sunrise - GRAD_TRANSITION) {
+        visibleStars = true;
+    }
 
     // canvas updates
     sunUpdate(curPos, sunrisePos, noonPos);
-    spawnShootingStar(night);
-    starsUpdate(night);
+    spawnShootingStar(visibleStars);
+    starsUpdate(visibleStars);
     skyUpdate(now);
 
     lastNow = now;
 
     if (DEBUG && init) console.timeEnd();
 
-    if (init) init = false;
-}
+    init = false;
+});
 
 /**
  * Updates sun sprite position on screen according to real time sun position.
@@ -181,16 +199,17 @@ function sunUpdate(curPos, sunrisePos, noonPos) {
 /**
  * Spawns a shooting star in the sky at night at random coordinates.
  *
- * @param {boolean} night
+ * @param {boolean} visibleStars
  */
-function spawnShootingStar(night) {
-    if (night && !~~(Math.random() * 200)) {
+function spawnShootingStar(visibleStars) {
+    if (visibleStars && !~~(Math.random() * 200)) {
         const shootingStar = new PIXI.AnimatedSprite(SHOOTING_STAR_TEXT);
 
         shootingStar.loop = false;
         shootingStar.animationSpeed = 0.8;
         shootingStar.x = ~~(Math.random() * WIDTH);
         shootingStar.y = ~~(Math.random() * STARS_SPAWN_HEIGHT);
+        shootingStar.alpha = starAlpha(shootingStar.y);
 
         shootingStar.onComplete = () => {
             shootingStar.destroy();
@@ -203,24 +222,36 @@ function spawnShootingStar(night) {
 
 /**
  * Updates each stars transparency.
- * They're invisible if not at night.
+ * Each one of them appears slowly if at night.
+ * They disappear slowly if not.
  *
- * @param {boolean} night
+ * @param {boolean} visibleStars True if stars can be visible in the sky.
  */
-function starsUpdate(night) {
+function starsUpdate(visibleStars) {
 
-    // stars visibility
-    STARS.visible = night;
+    const updateStarsVisibility = counter % STARS_APPEAR_SPEED === 0;
+    let checked = false;
 
-    // stars twinkling
-    if (STARS.visible) {
-        for (let i = 0; i < STAR_NUMBER; i++) {
-            if (!~~(Math.random() * 40)) {
-                const star = STARS.getChildAt(i);
-                const originalAlpha = starAlpha(star.y);
-                const offsetAlpha = Math.random() / 4;
-                star.alpha = originalAlpha - offsetAlpha;
+    for (let i = 0; i < RAND_STAR_INDEXES.length; i++) {
+
+        const star = STARS.getChildAt(RAND_STAR_INDEXES[i]);
+
+        // star appearance and disappearance
+        if (updateStarsVisibility) {
+            if (!checked && !visibleStars && star.visible) {
+                star.visible = false;
+                checked = true;
+            } else if (!checked && visibleStars && !star.visible) {
+                star.visible = true;
+                checked = true;
             }
+        }
+
+        // star twinkling
+        if (star.visible && !~~(Math.random() * 40)) {
+            const originalAlpha = starAlpha(star.y);
+            const offsetAlpha = Math.random() / 4;
+            star.alpha = originalAlpha - offsetAlpha;
         }
     }
 }
@@ -238,15 +269,10 @@ function starAlpha(y) {
 
 /**
  * @param {Object} events
+ * @param {Object} progressions
  * @return {CanvasRenderingContext2D[]}
  */
-function createSkyGradients(events) {
-
-    // events progressions percentages of the current day
-    const sunrisePrg = dayProgression(events.dawn);
-    const dayPrg = dayProgression(events.sunriseEnd);
-    const sunsetPrg = dayProgression(events.sunsetStart);
-    const nightPrg = dayProgression(events.dusk);
+function createSkyGradients(events, progressions) {
 
     let contexts = [];
     for (let i = 0; i < 2; i++) {
@@ -261,15 +287,15 @@ function createSkyGradients(events) {
         const gradient = context.createLinearGradient(0, 0, GRAD_LENGTH, 0);
 
         // editing gradient colors
-        gradient.addColorStop(0, SKY_COLORS.night[i]);
-        gradient.addColorStop(sunrisePrg - GRAD_TRANSITION, SKY_COLORS.night[i]);
-        gradient.addColorStop(sunrisePrg, SKY_COLORS.sunrise[i]);
-        gradient.addColorStop(dayPrg - GRAD_TRANSITION, SKY_COLORS.sunrise[i]);
-        gradient.addColorStop(dayPrg, SKY_COLORS.day[i]);
-        gradient.addColorStop(sunsetPrg - GRAD_TRANSITION, SKY_COLORS.day[i]);
-        gradient.addColorStop(sunsetPrg, SKY_COLORS.sunset[i]);
-        gradient.addColorStop(nightPrg - GRAD_TRANSITION, SKY_COLORS.sunset[i]);
-        gradient.addColorStop(nightPrg, SKY_COLORS.night[i]);
+        gradient.addColorStop(0, SKY_COLORS.night[i]); // end
+        gradient.addColorStop(progressions.sunrise - GRAD_TRANSITION, SKY_COLORS.night[i]);
+        gradient.addColorStop(progressions.sunrise, SKY_COLORS.sunrise[i]);
+        gradient.addColorStop(progressions.day - GRAD_TRANSITION, SKY_COLORS.sunrise[i]);
+        gradient.addColorStop(progressions.day, SKY_COLORS.day[i]);
+        gradient.addColorStop(progressions.sunset - GRAD_TRANSITION, SKY_COLORS.day[i]);
+        gradient.addColorStop(progressions.sunset, SKY_COLORS.sunset[i]);
+        gradient.addColorStop(progressions.night - GRAD_TRANSITION, SKY_COLORS.sunset[i]); // begin
+        gradient.addColorStop(progressions.night, SKY_COLORS.night[i]);
         gradient.addColorStop(1, SKY_COLORS.night[i]);
 
         // drawing gradient on its canvas
@@ -292,7 +318,7 @@ function skyUpdate(now) {
     // x coordinates on gradient corresponding to current day progression
     const x = dayProgression(now) * GRAD_LENGTH;
 
-    // getting current sky colors
+    // current sky colors
     const colors = [
         imageDataToRgbStr(gradients[0].getImageData(x, 0, 1, 1).data),
         imageDataToRgbStr(gradients[1].getImageData(x, 0, 1, 1).data),
@@ -328,7 +354,8 @@ function createSkyTexture(colors) {
 }
 
 /**
- * Returns progression of a given `time` in its day.
+ * Returns progression of the given `date` in its day.
+ * Exemple: a date at noon is 0.5, at midnight is 0.
  *
  * @param {Date} date
  * @return {number} day progression in percentage (0 to 1)
@@ -350,4 +377,18 @@ function dayProgression(date) {
  */
 function imageDataToRgbStr(imgData) {
     return 'rgb(' + imgData[0] + ',' + imgData[1] + ',' + imgData[2] + ')';
+}
+
+/**
+ * Durstenfeld shuffle algorithm.
+ *
+ * https://stackoverflow.com/a/12646864/17987233
+ *
+ * @param {number[]} array
+ */
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
 }
