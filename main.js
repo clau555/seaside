@@ -1,7 +1,6 @@
 // screen composition
 const WIDTH = 256;
 const HEIGHT = 144;
-const SEA_LEVEL = 120;
 
 // geographic position
 const LAT = 54;
@@ -25,7 +24,7 @@ const SKY = new PIXI.Sprite(createSkyTexture(SKY_COLORS.day));
 
 // stars
 const STARS = new PIXI.Container();
-const STAR_SPRITES = ['/assets/img/star_1.png', '/assets/img/star_2.png'];
+const STAR_SPRITES = ['/assets/img/stars/1.png', '/assets/img/stars/star_2.png'];
 const STAR_NUMBER = 60;
 const STARS_SPAWN_HEIGHT = 2 * HEIGHT / 3;
 const STARS_APPEAR_SPEED = 20; // number of frames between stars appearing/disappearing
@@ -66,6 +65,7 @@ const SEA_SPRITES = ['/assets/img/sea/1.png', '/assets/img/sea/2.png'];
 const SEA = new PIXI.AnimatedSprite(SEA_SPRITES.map((e) => {
     return PIXI.Texture.from(e);
 }));
+const SEA_LEVEL = 120;
 SEA.y = SEA_LEVEL;
 SEA.animationSpeed = 0.02;
 SEA.play();
@@ -80,17 +80,43 @@ for (let i = 0; i < BOAT_NUMBER; i++) {
     boat.anchor.x = 0;
     boat.anchor.y = 1;
     boat.scale.x = Math.random() > 0.5 ? 1 : -1;
-    boat.x = Math.random() * (WIDTH + 2 * BOAT_OFFSCREEN_MARGIN);
+    boat.x = Math.random() * (WIDTH + 2 * BOAT_OFFSCREEN_MARGIN) - BOAT_OFFSCREEN_MARGIN;
     boat.y = SEA_LEVEL;
     boat.roundPixels = true;
     boat.vx = Math.random() * 0.1;
     BOATS.addChild(boat);
 }
 
+// clouds
+const CLOUDS = new PIXI.Container();
+const CLOUD_LENGTH = 40; // in pixels
+const CLOUD_NUMBER = 10;
+const CLOUD_OFFSCREEN_MARGIN = CLOUD_LENGTH;
+const CLOUD_SPRITES = [
+    '/assets/img/clouds/1.png',
+    '/assets/img/clouds/2.png',
+    '/assets/img/clouds/3.png',
+    '/assets/img/clouds/4.png',
+];
+for (let i = 0; i < CLOUD_NUMBER; i++) {
+    const randIdx = ~~(Math.random() * CLOUD_SPRITES.length);
+    let cloud = PIXI.Sprite.from(CLOUD_SPRITES[randIdx]);
+    cloud.anchor.x = 0;
+    cloud.anchor.y = 1;
+    cloud.x = Math.random() * (WIDTH + 2 * CLOUD_OFFSCREEN_MARGIN) - CLOUD_OFFSCREEN_MARGIN;
+    cloud.y = Math.random() * 50 + 12;
+    cloud.roundPixels = true;
+    let rndSign = Math.random() > 0.5 ? 1 : -1;
+    cloud.vx = Math.random() * 0.1 * rndSign;
+    cloud.scale.x = rndSign;
+    CLOUDS.addChild(cloud);
+}
+
 // front sprites group
 const FRONT = new PIXI.Container();
 FRONT.addChild(SEA);
 FRONT.addChild(BOATS);
+FRONT.addChild(CLOUDS);
 
 // front sprites brightness filter
 const FILTER = new PIXI.filters.ColorMatrixFilter();
@@ -104,7 +130,7 @@ APP.stage.addChildAt(STARS, 1);
 APP.stage.addChildAt(SUN, 2);
 APP.stage.addChildAt(FRONT, 3);
 
-const DEBUG = true;
+const DEBUG = false;
 let counter = 0;
 
 let lastNow = new Date();
@@ -128,7 +154,6 @@ APP.ticker.add(() => {
     if (DEBUG) {
         // time speed up
         now.setTime(now.getTime() + 60000 * counter);
-        counter++;
     }
 
     /*
@@ -196,6 +221,7 @@ APP.ticker.add(() => {
     // canvas updates
     sunUpdate(curPos, sunrisePos, noonPos);
     boatsUpdate();
+    cloudsUpdate();
     spawnShootingStar(visibleStars);
     starsUpdate(visibleStars);
     SKY.texture = createSkyTexture(colors);
@@ -205,6 +231,7 @@ APP.ticker.add(() => {
 
     lastNow = now;
     if (DEBUG && init) console.timeEnd();
+    counter++;
     init = false;
 });
 
@@ -225,6 +252,10 @@ function sunUpdate(curPos, sunrisePos, noonPos) {
     SUN.y = SEA_LEVEL - (SEA_LEVEL - 10) * curPos.altitude / noonPos.altitude;
 }
 
+/**
+ * Updates boats sprite position on screen.
+ * They continuously go from one side of the screen to the other.
+ */
 function boatsUpdate() {
     for (let i = 0; i < BOAT_NUMBER; i++) {
 
@@ -240,6 +271,25 @@ function boatsUpdate() {
             // off-screen on right border
             boat.scale.x = -1;
             boat.x = WIDTH + BOAT_LENGTH;
+        }
+    }
+}
+
+function cloudsUpdate() {
+    for (let i = 0; i < CLOUD_NUMBER; i++) {
+
+        const cloud = CLOUDS.getChildAt(i);
+
+        cloud.x += cloud.vx;
+
+        if (cloud.x + CLOUD_OFFSCREEN_MARGIN < 0) {
+            // off-screen on left border
+            cloud.x = -CLOUD_LENGTH;
+            cloud.vx *= -1;
+        } else if (cloud.x > WIDTH + CLOUD_OFFSCREEN_MARGIN) {
+            // off-screen on right border
+            cloud.x = WIDTH + CLOUD_LENGTH;
+            cloud.vx *= -1;
         }
     }
 }
