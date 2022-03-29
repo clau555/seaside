@@ -166,16 +166,24 @@ APP.ticker.add(() => {
         visibleStars = true;
     }
 
+    // getting current sky colors
+    const x = progressions.now * GRAD_LENGTH;
+    const colors = [
+        imageDataToRgbStr(gradients[0].getImageData(x, 0, 1, 1).data),
+        imageDataToRgbStr(gradients[1].getImageData(x, 0, 1, 1).data),
+    ];
+
     // canvas updates
     sunUpdate(curPos, sunrisePos, noonPos);
     spawnShootingStar(visibleStars);
     starsUpdate(visibleStars);
-    skyUpdate(now);
+    SKY.texture = createSkyTexture(colors);
+
+    // front sprites brightness adjustment
+    FILTER.brightness(luminosityOfRgbStr(colors[1]) / 255);
 
     lastNow = now;
-
     if (DEBUG && init) console.timeEnd();
-
     init = false;
 });
 
@@ -287,14 +295,14 @@ function createSkyGradients(events, progressions) {
         const gradient = context.createLinearGradient(0, 0, GRAD_LENGTH, 0);
 
         // editing gradient colors
-        gradient.addColorStop(0, SKY_COLORS.night[i]); // end
+        gradient.addColorStop(0, SKY_COLORS.night[i]);
         gradient.addColorStop(progressions.sunrise - GRAD_TRANSITION, SKY_COLORS.night[i]);
         gradient.addColorStop(progressions.sunrise, SKY_COLORS.sunrise[i]);
         gradient.addColorStop(progressions.day - GRAD_TRANSITION, SKY_COLORS.sunrise[i]);
         gradient.addColorStop(progressions.day, SKY_COLORS.day[i]);
         gradient.addColorStop(progressions.sunset - GRAD_TRANSITION, SKY_COLORS.day[i]);
         gradient.addColorStop(progressions.sunset, SKY_COLORS.sunset[i]);
-        gradient.addColorStop(progressions.night - GRAD_TRANSITION, SKY_COLORS.sunset[i]); // begin
+        gradient.addColorStop(progressions.night - GRAD_TRANSITION, SKY_COLORS.sunset[i]);
         gradient.addColorStop(progressions.night, SKY_COLORS.night[i]);
         gradient.addColorStop(1, SKY_COLORS.night[i]);
 
@@ -306,26 +314,6 @@ function createSkyGradients(events, progressions) {
     }
 
     return contexts;
-}
-
-/**
- * Updates sun colors and texture.
- *
- * @param {Date} now
- */
-function skyUpdate(now) {
-
-    // x coordinates on gradient corresponding to current day progression
-    const x = dayProgression(now) * GRAD_LENGTH;
-
-    // current sky colors
-    const colors = [
-        imageDataToRgbStr(gradients[0].getImageData(x, 0, 1, 1).data),
-        imageDataToRgbStr(gradients[1].getImageData(x, 0, 1, 1).data),
-    ];
-
-    // applying colors
-    SKY.texture = createSkyTexture(colors);
 }
 
 /**
@@ -377,6 +365,17 @@ function dayProgression(date) {
  */
 function imageDataToRgbStr(imgData) {
     return 'rgb(' + imgData[0] + ',' + imgData[1] + ',' + imgData[2] + ')';
+}
+
+/**
+ * Returns the luminosity of a css rgb string.
+ *
+ * @param {string} rgbStr
+ * @return {number}
+ */
+function luminosityOfRgbStr(rgbStr) {
+    const rgb = rgbStr.match(/\d+/g);
+    return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
 }
 
 /**
