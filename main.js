@@ -28,6 +28,8 @@ const STARS = new PIXI.Container();
 const STAR_SPRITES = ['/assets/img/star_1.png', '/assets/img/star_2.png'];
 const STAR_NUMBER = 60;
 const STARS_SPAWN_HEIGHT = 2 * HEIGHT / 3;
+const STARS_APPEAR_SPEED = 20; // number of frames between stars appearing/disappearing
+
 for (let i = 0; i < STAR_NUMBER; i++) {
     const randIdx = ~~(Math.random() * STAR_SPRITES.length);
     const star = PIXI.Sprite.from(STAR_SPRITES[randIdx]);
@@ -41,7 +43,6 @@ const RAND_STAR_INDEXES = Array
     .apply(null, {length: STAR_NUMBER})
     .map((_, i) => i);
 shuffleArray(RAND_STAR_INDEXES);
-const STARS_APPEAR_SPEED = 20; // number of frames between stars appearing/disappearing
 
 // shooting star
 const SHOOTING_STAR_SPRITES = [
@@ -57,7 +58,8 @@ const SHOOTING_STAR_TEXT = SHOOTING_STAR_SPRITES.map((e) => {
 
 // sun
 const SUN = PIXI.Sprite.from('/assets/img/sun.png');
-SUN.anchor.set(0.5);
+SUN.anchor.set(0.5)
+SUN.roundPixels = true;
 
 // sea
 const SEA_SPRITES = ['/assets/img/sea/1.png', '/assets/img/sea/2.png'];
@@ -68,9 +70,27 @@ SEA.y = SEA_LEVEL;
 SEA.animationSpeed = 0.02;
 SEA.play();
 
+// boats
+const BOATS = new PIXI.Container();
+const BOAT_LENGTH = 8; // in pixels
+const BOAT_NUMBER = 3;
+const BOAT_OFFSCREEN_MARGIN = BOAT_LENGTH * 10;
+for (let i = 0; i < BOAT_NUMBER; i++) {
+    let boat = PIXI.Sprite.from('/assets/img/boat.png');
+    boat.anchor.x = 0;
+    boat.anchor.y = 1;
+    boat.scale.x = Math.random() > 0.5 ? 1 : -1;
+    boat.x = Math.random() * (WIDTH + 2 * BOAT_OFFSCREEN_MARGIN);
+    boat.y = SEA_LEVEL;
+    boat.roundPixels = true;
+    boat.vx = Math.random() * 0.1;
+    BOATS.addChild(boat);
+}
+
 // front sprites group
 const FRONT = new PIXI.Container();
 FRONT.addChild(SEA);
+FRONT.addChild(BOATS);
 
 // front sprites brightness filter
 const FILTER = new PIXI.filters.ColorMatrixFilter();
@@ -175,6 +195,7 @@ APP.ticker.add(() => {
 
     // canvas updates
     sunUpdate(curPos, sunrisePos, noonPos);
+    boatsUpdate();
     spawnShootingStar(visibleStars);
     starsUpdate(visibleStars);
     SKY.texture = createSkyTexture(colors);
@@ -200,8 +221,27 @@ function sunUpdate(curPos, sunrisePos, noonPos) {
     const azimuthOffset = Math.abs(sunrisePos.azimuth) + 0.1;
 
     // updates the sun sprite coordinates making it describe a parabolic movement through the day
-    SUN.x = ~~(WIDTH * ((curPos.azimuth + azimuthOffset) % (azimuthOffset * 2)) / (azimuthOffset * 2));
-    SUN.y = ~~(SEA_LEVEL - (SEA_LEVEL - 10) * curPos.altitude / noonPos.altitude);
+    SUN.x = WIDTH * ((curPos.azimuth + azimuthOffset) % (azimuthOffset * 2)) / (azimuthOffset * 2);
+    SUN.y = SEA_LEVEL - (SEA_LEVEL - 10) * curPos.altitude / noonPos.altitude;
+}
+
+function boatsUpdate() {
+    for (let i = 0; i < BOAT_NUMBER; i++) {
+
+        const boat = BOATS.getChildAt(i);
+
+        boat.x += boat.vx * boat.scale.x;
+
+        if (boat.x + BOAT_OFFSCREEN_MARGIN < 0) {
+            // off-screen on left border
+            boat.scale.x = 1;
+            boat.x = -BOAT_LENGTH;
+        } else if (boat.x > WIDTH + BOAT_OFFSCREEN_MARGIN) {
+            // off-screen on right border
+            boat.scale.x = -1;
+            boat.x = WIDTH + BOAT_LENGTH;
+        }
+    }
 }
 
 /**
@@ -210,9 +250,10 @@ function sunUpdate(curPos, sunrisePos, noonPos) {
  * @param {boolean} visibleStars
  */
 function spawnShootingStar(visibleStars) {
-    if (visibleStars && !~~(Math.random() * 200)) {
-        const shootingStar = new PIXI.AnimatedSprite(SHOOTING_STAR_TEXT);
 
+    if (visibleStars && !~~(Math.random() * 200)) {
+
+        const shootingStar = new PIXI.AnimatedSprite(SHOOTING_STAR_TEXT);
         shootingStar.loop = false;
         shootingStar.animationSpeed = 0.8;
         shootingStar.x = ~~(Math.random() * WIDTH);
@@ -235,7 +276,7 @@ function spawnShootingStar(visibleStars) {
  *
  * @param {boolean} visibleStars True if stars can be visible in the sky.
  */
-function starsUpdate(visibleStars) {
+function starsUpdate(visibleStars)  {
 
     const updateStarsVisibility = counter % STARS_APPEAR_SPEED === 0;
     let checked = false;
