@@ -1,4 +1,11 @@
-// screen composition
+// audio
+const AUDIO = new Audio("assets/sea-waves.wav");
+AUDIO.loop = true;
+AUDIO.volume = 0.2;
+AUDIO.load();
+AUDIO.play().then(() => {});
+
+// screen dimensions
 const WIDTH = 256;
 const HEIGHT = 144;
 
