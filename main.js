@@ -31,7 +31,7 @@ const SKY = new PIXI.Sprite(createSkyTexture(SKY_COLORS.day));
 
 // stars
 const STARS = new PIXI.Container();
-const STAR_SPRITES = ['/assets/img/stars/1.png', '/assets/img/stars/star_2.png'];
+const STAR_SPRITES = ['assets/img/stars/1.png', 'assets/img/stars/star_2.png'];
 const STAR_NUMBER = 60;
 const STARS_SPAWN_HEIGHT = 2 * HEIGHT / 3;
 const STARS_APPEAR_SPEED = 20; // number of frames between stars appearing/disappearing
@@ -52,23 +52,23 @@ shuffleArray(RAND_STAR_INDEXES);
 
 // shooting star
 const SHOOTING_STAR_SPRITES = [
-    '/assets/img/shooting_star/1.png',
-    '/assets/img/shooting_star/2.png',
-    '/assets/img/shooting_star/3.png',
-    '/assets/img/shooting_star/4.png',
-    '/assets/img/shooting_star/5.png',
+    'assets/img/shooting_star/1.png',
+    'assets/img/shooting_star/2.png',
+    'assets/img/shooting_star/3.png',
+    'assets/img/shooting_star/4.png',
+    'assets/img/shooting_star/5.png',
 ];
 const SHOOTING_STAR_TEXT = SHOOTING_STAR_SPRITES.map((e) => {
     return PIXI.Texture.from(e);
 });
 
 // sun
-const SUN = PIXI.Sprite.from('/assets/img/sun.png');
+const SUN = PIXI.Sprite.from('assets/img/sun.png');
 SUN.anchor.set(0.5)
 SUN.roundPixels = true;
 
 // sea
-const SEA_SPRITES = ['/assets/img/sea/1.png', '/assets/img/sea/2.png'];
+const SEA_SPRITES = ['assets/img/sea/1.png', 'assets/img/sea/2.png'];
 const SEA = new PIXI.AnimatedSprite(SEA_SPRITES.map((e) => {
     return PIXI.Texture.from(e);
 }));
@@ -83,7 +83,7 @@ const BOAT_LENGTH = 8; // in pixels
 const BOAT_NUMBER = 3;
 const BOAT_OFFSCREEN_MARGIN = BOAT_LENGTH * 10;
 for (let i = 0; i < BOAT_NUMBER; i++) {
-    let boat = PIXI.Sprite.from('/assets/img/boat.png');
+    let boat = PIXI.Sprite.from('assets/img/boat.png');
     boat.anchor.x = 0;
     boat.anchor.y = 1;
     boat.scale.x = Math.random() > 0.5 ? 1 : -1;
@@ -100,10 +100,10 @@ const CLOUD_LENGTH = 40; // in pixels
 const CLOUD_NUMBER = 10;
 const CLOUD_OFFSCREEN_MARGIN = CLOUD_LENGTH;
 const CLOUD_SPRITES = [
-    '/assets/img/clouds/1.png',
-    '/assets/img/clouds/2.png',
-    '/assets/img/clouds/3.png',
-    '/assets/img/clouds/4.png',
+    'assets/img/clouds/1.png',
+    'assets/img/clouds/2.png',
+    'assets/img/clouds/3.png',
+    'assets/img/clouds/4.png',
 ];
 for (let i = 0; i < CLOUD_NUMBER; i++) {
     const randIdx = ~~(Math.random() * CLOUD_SPRITES.length);
@@ -265,7 +265,6 @@ function sunUpdate(curPos, sunrisePos, noonPos) {
  */
 function boatsUpdate() {
     for (let i = 0; i < BOAT_NUMBER; i++) {
-
         const boat = BOATS.getChildAt(i);
 
         boat.x += boat.vx * boat.scale.x;
@@ -282,9 +281,12 @@ function boatsUpdate() {
     }
 }
 
+/**
+ * Updates clouds sprite position on screen.
+ * They continuously go from one side of the screen to the other.
+ */
 function cloudsUpdate() {
     for (let i = 0; i < CLOUD_NUMBER; i++) {
-
         const cloud = CLOUDS.getChildAt(i);
 
         cloud.x += cloud.vx;
@@ -331,7 +333,7 @@ function spawnShootingStar(visibleStars) {
  * Each one of them appears slowly if at night.
  * They disappear slowly if not.
  *
- * @param {boolean} visibleStars True if stars can be visible in the sky.
+ * @param {boolean} visibleStars - True if stars can be visible in the sky.
  */
 function starsUpdate(visibleStars)  {
 
@@ -366,7 +368,7 @@ function starsUpdate(visibleStars)  {
  * Returns the appropriate alpha transparency
  * of a star sprite according to its height.
  *
- * @param {number} y star height in pixels
+ * @param {number} y - star height in pixels
  * @return {number}
  */
 function starAlpha(y) {
@@ -374,8 +376,13 @@ function starAlpha(y) {
 }
 
 /**
- * @param {Object} events
- * @param {Object} progressions
+ * Returns two canvas contexts, each of them containing the color progression of
+ * the sky colors through the day, starting from midnight to the end of the day.
+ * The first one is for the top color of the sky, the second one for the bottom color.
+ *
+ * @param {Object} events - SunCalc events got from `Suncalc.getPosition()`
+ * @param {Object} progressions - object having as keys the different events of the
+ * day and their day progression percentage as values.
  * @return {CanvasRenderingContext2D[]}
  */
 function createSkyGradients(events, progressions) {
@@ -419,7 +426,7 @@ function createSkyGradients(events, progressions) {
  *
  * https://pixijs.io/examples/#/textures/gradient-basic.js
  *
- * @param {string[]} colors css rgb strings
+ * @param {string[]} colors - css rgb strings
  * @return {PIXI.Texture}
  */
 function createSkyTexture(colors) {
@@ -444,7 +451,7 @@ function createSkyTexture(colors) {
  * Exemple: a date at noon is 0.5, at midnight is 0.
  *
  * @param {Date} date
- * @return {number} day progression in percentage (0 to 1)
+ * @return {number} - day progression in percentage (0 to 1)
  */
 function dayProgression(date) {
     const a = new Date(date);
