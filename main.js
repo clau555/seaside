@@ -1,5 +1,5 @@
 // audio
-const AUDIO = new Audio("assets/sea-waves.wav");
+const AUDIO = new Audio('assets/sea-waves.wav');
 AUDIO.loop = true;
 AUDIO.volume = 0.2;
 AUDIO.load();
@@ -163,10 +163,8 @@ APP.ticker.add(() => {
         now.setTime(now.getTime() + 60000 * counter);
     }
 
-    /*
-    hard coded fix for a bug where the getTimes method
-    doesn't return the Dates of the current day.
-    */
+    // hard coded fix for a bug where the getTimes method
+    // doesn't return the Dates of the current day.
     const dateTmp = new Date(now);
     if (dateTmp.getHours() < 2) dateTmp.setHours(12);
 
@@ -194,11 +192,11 @@ APP.ticker.add(() => {
     // Windows of the different phases of the day.
     // They have to be in this order for the below while loop to work.
     const windows = [
-        { phase: "night",   time: events.dusk },
-        { phase: "sunset",  time: events.sunsetStart },
-        { phase: "day",     time: events.sunriseEnd },
-        { phase: "sunrise", time: events.dawn },
-        { phase: "night",   time: midnight },
+        { phase: 'night',   time: events.dusk },
+        { phase: 'sunset',  time: events.sunsetStart },
+        { phase: 'day',     time: events.sunriseEnd },
+        { phase: 'sunrise', time: events.dawn },
+        { phase: 'night',   time: midnight },
     ];
 
     // finding the current window
