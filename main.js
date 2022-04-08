@@ -1,3 +1,7 @@
+// -----------------------------------------------------------------------------
+// CONSTANTS
+// -----------------------------------------------------------------------------
+
 // audio
 const AUDIO = new Audio('assets/sea-waves.wav');
 AUDIO.loop = true;
@@ -10,8 +14,8 @@ const WIDTH = 256;
 const HEIGHT = 144;
 
 // geographic position
-const LAT = 54;
-const LONG = -6.41667;
+const LATITUDE = 54;
+const LONGITUDE = -6.41667;
 
 // sky colors gradients
 const GRAD_LENGTH = 512; // length in pixels
@@ -31,10 +35,10 @@ const SKY = new PIXI.Sprite(createSkyTexture(SKY_COLORS.day));
 
 // stars
 const STARS = new PIXI.Container();
-const STAR_SPRITES = ['assets/img/stars/1.png', 'assets/img/stars/star_2.png'];
+const STAR_SPRITES = ['assets/img/stars/1.png', 'assets/img/stars/2.png'];
 const STAR_NUMBER = 60;
 const STARS_SPAWN_HEIGHT = 2 * HEIGHT / 3;
-const STARS_APPEAR_SPEED = 20; // number of frames between stars appearing/disappearing
+const STARS_APPEAR_SPEED = 20; // number of frames between each star appearance/disappearance
 
 for (let i = 0; i < STAR_NUMBER; i++) {
     const randIdx = ~~(Math.random() * STAR_SPRITES.length);
@@ -59,7 +63,7 @@ const SHOOTING_STAR_SPRITES = [
     'assets/img/shooting_star/5.png',
 ];
 const SHOOTING_STAR_TEXT = SHOOTING_STAR_SPRITES.map((e) => {
-    return PIXI.Texture.from(e);
+    return PIXI.Texture.from(e, {});
 });
 
 // sun
@@ -70,7 +74,7 @@ SUN.roundPixels = true;
 // sea
 const SEA_SPRITES = ['assets/img/sea/1.png', 'assets/img/sea/2.png'];
 const SEA = new PIXI.AnimatedSprite(SEA_SPRITES.map((e) => {
-    return PIXI.Texture.from(e);
+    return PIXI.Texture.from(e, {});
 }));
 const SEA_LEVEL = 120;
 SEA.y = SEA_LEVEL;
@@ -137,6 +141,10 @@ APP.stage.addChildAt(STARS, 1);
 APP.stage.addChildAt(SUN, 2);
 APP.stage.addChildAt(FRONT, 3);
 
+// -----------------------------------------------------------------------------
+// MAIN LOOP
+// -----------------------------------------------------------------------------
+
 const DEBUG = false;
 let counter = 0;
 
@@ -168,12 +176,12 @@ APP.ticker.add(() => {
     const dateTmp = new Date(now);
     if (dateTmp.getHours() < 2) dateTmp.setHours(12);
 
-    const events = SunCalc.getTimes(dateTmp, LAT, LONG);
+    const events = SunCalc.getTimes(dateTmp, LATITUDE, LONGITUDE);
 
     // sun angle at different times of the day
-    const sunrisePos = SunCalc.getPosition(events.sunrise, LAT, LONG);
-    const noonPos = SunCalc.getPosition(events.solarNoon, LAT, LONG);
-    const curPos = SunCalc.getPosition(now, LAT, LONG);
+    const sunrisePos = SunCalc.getPosition(events.sunrise, LATITUDE, LONGITUDE);
+    const noonPos = SunCalc.getPosition(events.solarNoon, LATITUDE, LONGITUDE);
+    const curPos = SunCalc.getPosition(now, LATITUDE, LONGITUDE);
 
     // recalculates sky gradients every new day
     if (now.getDate() > lastNow.getDate() || init) {
@@ -240,6 +248,10 @@ APP.ticker.add(() => {
     counter++;
     init = false;
 });
+
+// -----------------------------------------------------------------------------
+// FUNCTIONS
+// -----------------------------------------------------------------------------
 
 /**
  * Updates sun sprite position on screen according to real time sun position.
@@ -442,7 +454,7 @@ function createSkyTexture(colors) {
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    return PIXI.Texture.from(canvas);
+    return PIXI.Texture.from(canvas, {});
 }
 
 /**
