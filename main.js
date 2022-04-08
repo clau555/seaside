@@ -230,6 +230,7 @@ APP.ticker.add(() => {
     spawnShootingStar(visibleStars);
     starsUpdate(visibleStars);
     SKY.texture = createSkyTexture(colors);
+    document.body.style.backgroundColor = colors[0];
 
     // front sprites brightness adjustment
     FILTER.brightness(luminosityOfRgbStr(colors[1]) / 255);
