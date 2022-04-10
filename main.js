@@ -38,7 +38,9 @@ const STARS = new PIXI.Container();
 const STAR_SPRITES = ['assets/img/stars/1.png', 'assets/img/stars/2.png'];
 const STAR_NUMBER = 60;
 const STARS_SPAWN_HEIGHT = 2 * HEIGHT / 3;
-const STARS_APPEAR_SPEED = 20; // number of frames between each star appearance/disappearance
+
+// number of frames between each star appearance/disappearance
+const STARS_APPEAR_SPEED = 20;
 
 for (let i = 0; i < STAR_NUMBER; i++) {
     const randIdx = ~~(Math.random() * STAR_SPRITES.length);
@@ -151,12 +153,21 @@ let counter = 0;
 let lastNow = new Date();
 let init = true; // true on first loop, false after
 let gradients = [];
+
+// percentage day progressions of the different events
 let progressions = {
     sunrise: 0,
     day: 0,
     sunset: 0,
     night: 0,
     now: 0,
+};
+
+// stores sun position at different events of the day
+let sunPositions = {
+    sunrise: null,
+    noon: null,
+    now: null,
 };
 
 // main loop
@@ -178,20 +189,23 @@ APP.ticker.add(() => {
 
     const events = SunCalc.getTimes(dateTmp, LATITUDE, LONGITUDE);
 
-    // sun angle at different times of the day
-    const sunrisePos = SunCalc.getPosition(events.sunrise, LATITUDE, LONGITUDE);
-    const noonPos = SunCalc.getPosition(events.solarNoon, LATITUDE, LONGITUDE);
-    const curPos = SunCalc.getPosition(now, LATITUDE, LONGITUDE);
-
-    // recalculates sky gradients every new day
+    // new day condition
     if (now.getDate() > lastNow.getDate() || init) {
+
+        // recalculate sky gradient
         progressions.sunrise = dayProgression(events.dawn);
         progressions.day = dayProgression(events.sunriseEnd);
         progressions.sunset = dayProgression(events.sunsetStart);
         progressions.night = dayProgression(events.dusk);
         gradients = createSkyGradients(events, progressions);
+
+        // recalculate sun positions
+        sunPositions.sunrise = SunCalc.getPosition(events.sunrise, LATITUDE, LONGITUDE);
+        sunPositions.noon = SunCalc.getPosition(events.solarNoon, LATITUDE, LONGITUDE);
+        sunPositions.sunset = SunCalc.getPosition(events.sunsetStart, LATITUDE, LONGITUDE);
     }
     progressions.now = dayProgression(now);
+    sunPositions.now = SunCalc.getPosition(now, LATITUDE, LONGITUDE);
 
     // current date's midnight
     const midnight = new Date(now);
@@ -232,11 +246,16 @@ APP.ticker.add(() => {
     ];
 
     // canvas updates
-    sunUpdate(curPos, sunrisePos, noonPos);
     boatsUpdate();
     cloudsUpdate();
     spawnShootingStar(visibleStars);
     starsUpdate(visibleStars);
+
+    // sun sprite describes a parabolic movement through the day
+    SUN.x = WIDTH / 2 - (WIDTH / 2 - 10) * sunPositions.now.azimuth / sunPositions.sunrise.azimuth;
+    SUN.y = SEA_LEVEL - (SEA_LEVEL - 10) * sunPositions.now.altitude / sunPositions.noon.altitude;
+
+    // sky and ambiant color update
     SKY.texture = createSkyTexture(colors);
     document.body.style.backgroundColor = colors[0];
 
@@ -252,23 +271,6 @@ APP.ticker.add(() => {
 // -----------------------------------------------------------------------------
 // FUNCTIONS
 // -----------------------------------------------------------------------------
-
-/**
- * Updates sun sprite position on screen according to real time sun position.
- *
- * @param {object} curPos
- * @param {object} sunrisePos
- * @param {object} noonPos
- */
-function sunUpdate(curPos, sunrisePos, noonPos) {
-
-    // sets the margin between the sun and the screen left and right edges
-    const azimuthOffset = Math.abs(sunrisePos.azimuth) + 0.1;
-
-    // updates the sun sprite coordinates making it describe a parabolic movement through the day
-    SUN.x = WIDTH * ((curPos.azimuth + azimuthOffset) % (azimuthOffset * 2)) / (azimuthOffset * 2);
-    SUN.y = SEA_LEVEL - (SEA_LEVEL - 10) * curPos.altitude / noonPos.altitude;
-}
 
 /**
  * Updates boats sprite position on screen.
@@ -389,11 +391,12 @@ function starAlpha(y) {
 /**
  * Returns two canvas contexts, each of them containing the color progression of
  * the sky colors through the day, starting from midnight to the end of the day.
- * The first one is for the top color of the sky, the second one for the bottom color.
+ * The first one is for the top color of the sky, the second one for the bottom
+ * color.
  *
  * @param {Object} events - SunCalc events got from `Suncalc.getPosition()`
- * @param {Object} progressions - object having as keys the different events of the
- * day and their day progression percentage as values.
+ * @param {Object} progressions - object having as keys the different events of
+ * the day and their day progression percentage as values.
  * @return {CanvasRenderingContext2D[]}
  */
 function createSkyGradients(events, progressions) {
@@ -412,13 +415,25 @@ function createSkyGradients(events, progressions) {
 
         // editing gradient colors
         gradient.addColorStop(0, SKY_COLORS.night[i]);
-        gradient.addColorStop(progressions.sunrise - GRAD_TRANSITION, SKY_COLORS.night[i]);
+        gradient.addColorStop(
+            progressions.sunrise - GRAD_TRANSITION,
+            SKY_COLORS.night[i]
+        );
         gradient.addColorStop(progressions.sunrise, SKY_COLORS.sunrise[i]);
-        gradient.addColorStop(progressions.day - GRAD_TRANSITION, SKY_COLORS.sunrise[i]);
+        gradient.addColorStop(
+            progressions.day - GRAD_TRANSITION,
+            SKY_COLORS.sunrise[i]
+        );
         gradient.addColorStop(progressions.day, SKY_COLORS.day[i]);
-        gradient.addColorStop(progressions.sunset - GRAD_TRANSITION, SKY_COLORS.day[i]);
+        gradient.addColorStop(
+            progressions.sunset - GRAD_TRANSITION,
+            SKY_COLORS.day[i]
+        );
         gradient.addColorStop(progressions.sunset, SKY_COLORS.sunset[i]);
-        gradient.addColorStop(progressions.night - GRAD_TRANSITION, SKY_COLORS.sunset[i]);
+        gradient.addColorStop(
+            progressions.night - GRAD_TRANSITION,
+            SKY_COLORS.sunset[i]
+        );
         gradient.addColorStop(progressions.night, SKY_COLORS.night[i]);
         gradient.addColorStop(1, SKY_COLORS.night[i]);
 
