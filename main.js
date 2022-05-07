@@ -13,14 +13,11 @@ AUDIO.play().then(() => {});
 const WIDTH = 256;
 const HEIGHT = 144;
 
-// geographic position
-const LATITUDE = 54;
-const LONGITUDE = -6.41667;
-
-// sky colors gradients
-const GRAD_LENGTH = 512; // length in pixels
-const GRAD_HEIGHT = 1;
-const GRAD_TRANSITION = 0.03; // transition duration between phases in %
+// phases time in terms of day progression
+const SUNRISE_PROGRESSION = 0.24;
+const DAY_PROGRESSION = 0.27;
+const SUNSET_PROGRESSION = 0.74;
+const NIGHT_PROGRESSION = 0.77;
 
 // sky colors
 const SKY_COLORS = {
@@ -29,6 +26,12 @@ const SKY_COLORS = {
     sunset: [ 'rgb(59,38,115)', 'rgb(255,86,36)' ],
     night: [ 'rgb(8, 0, 30)', 'rgb(50, 39, 119)' ],
 };
+
+// sky colors gradients
+const GRAD_LENGTH = 512; // length in pixels
+const GRAD_HEIGHT = 1;
+const GRAD_TRANSITION = 0.03; // transition duration between phases in %
+const GRADIENTS = createSkyGradients();
 
 // sky
 const SKY = new PIXI.Sprite(createSkyTexture(SKY_COLORS.day));
@@ -72,6 +75,11 @@ const SHOOTING_STAR_TEXT = SHOOTING_STAR_SPRITES.map((e) => {
 const SUN = PIXI.Sprite.from('assets/img/sun.png');
 SUN.anchor.set(0.5)
 SUN.roundPixels = true;
+
+// moon
+const MOON = PIXI.Sprite.from('assets/img/sun.png');
+MOON.anchor.set(0.5)
+MOON.roundPixels = true;
 
 // sea
 const SEA_SPRITES = ['assets/img/sea/1.png', 'assets/img/sea/2.png'];
@@ -142,6 +150,7 @@ APP.stage.addChildAt(SKY, 0);
 APP.stage.addChildAt(STARS, 1);
 APP.stage.addChildAt(SUN, 2);
 APP.stage.addChildAt(FRONT, 3);
+// APP.stage.addChildAt(MOON, 4);
 
 // -----------------------------------------------------------------------------
 // MAIN LOOP
@@ -149,26 +158,7 @@ APP.stage.addChildAt(FRONT, 3);
 
 const DEBUG = false;
 let counter = 0;
-
-let lastNow = new Date();
 let init = true; // true on first loop, false after
-let gradients = [];
-
-// percentage day progressions of the different events
-let progressions = {
-    sunrise: 0,
-    day: 0,
-    sunset: 0,
-    night: 0,
-    now: 0,
-};
-
-// stores sun position at different events of the day
-let sunPositions = {
-    sunrise: null,
-    noon: null,
-    now: null,
-};
 
 // main loop
 APP.ticker.add(() => {
@@ -176,73 +166,22 @@ APP.ticker.add(() => {
     if (DEBUG && init) console.time();
 
     const now = new Date();
-
     if (DEBUG) {
-        // time speed up
-        now.setTime(now.getTime() + 60000 * counter);
+        now.setTime(now.getTime() + 60000 * counter); // time speed up
     }
-
-    // hard coded fix for a bug where the getTimes method
-    // doesn't return the Dates of the current day.
-    const dateTmp = new Date(now);
-    if (dateTmp.getHours() < 2) dateTmp.setHours(12);
-
-    const events = SunCalc.getTimes(dateTmp, LATITUDE, LONGITUDE);
-
-    // new day condition
-    if (now.getDate() > lastNow.getDate() || init) {
-
-        // recalculate sky gradient
-        progressions.sunrise = dayProgression(events.dawn);
-        progressions.day = dayProgression(events.sunriseEnd);
-        progressions.sunset = dayProgression(events.sunsetStart);
-        progressions.night = dayProgression(events.dusk);
-        gradients = createSkyGradients(events, progressions);
-
-        // recalculate sun positions
-        sunPositions.sunrise = SunCalc.getPosition(events.sunrise, LATITUDE, LONGITUDE);
-        sunPositions.noon = SunCalc.getPosition(events.solarNoon, LATITUDE, LONGITUDE);
-        sunPositions.sunset = SunCalc.getPosition(events.sunsetStart, LATITUDE, LONGITUDE);
-    }
-    progressions.now = dayProgression(now);
-    sunPositions.now = SunCalc.getPosition(now, LATITUDE, LONGITUDE);
-
-    // current date's midnight
-    const midnight = new Date(now);
-    midnight.setHours(0, 0, 0, 0);
-
-    // Windows of the different phases of the day.
-    // They have to be in this order for the below while loop to work.
-    const windows = [
-        { phase: 'night',   time: events.dusk },
-        { phase: 'sunset',  time: events.sunsetStart },
-        { phase: 'day',     time: events.sunriseEnd },
-        { phase: 'sunrise', time: events.dawn },
-        { phase: 'night',   time: midnight },
-    ];
-
-    // finding the current window
-    let found = false;
-    let i = 0;
-    while (!found && i < windows.length) {
-        if (now >= windows[i].time) found = true;
-        i++;
-    }
-    i--;
-
-    if (!found) throw new Error("Could not find current window.");
+    const progression = dayProgression(now);
 
     let visibleStars = false;
-    if (progressions.now >= (progressions.night - GRAD_TRANSITION) ||
-        progressions.now <= progressions.sunrise - GRAD_TRANSITION) {
+    if (progression >= NIGHT_PROGRESSION - GRAD_TRANSITION ||
+        progression <= SUNRISE_PROGRESSION - GRAD_TRANSITION) {
         visibleStars = true;
     }
 
     // getting current sky colors
-    const x = progressions.now * GRAD_LENGTH;
+    const x = progression * GRAD_LENGTH;
     const colors = [
-        imageDataToRgbStr(gradients[0].getImageData(x, 0, 1, 1).data),
-        imageDataToRgbStr(gradients[1].getImageData(x, 0, 1, 1).data),
+        imageDataToRgbStr(GRADIENTS[0].getImageData(x, 0, 1, 1).data),
+        imageDataToRgbStr(GRADIENTS[1].getImageData(x, 0, 1, 1).data),
     ];
 
     // canvas updates
@@ -251,9 +190,11 @@ APP.ticker.add(() => {
     spawnShootingStar(visibleStars);
     starsUpdate(visibleStars);
 
-    // sun sprite describes a parabolic movement through the day
-    SUN.x = WIDTH / 2 - (WIDTH / 2 - 10) * sunPositions.now.azimuth / sunPositions.sunrise.azimuth;
-    SUN.y = SEA_LEVEL - (SEA_LEVEL - 10) * sunPositions.now.altitude / sunPositions.noon.altitude;
+    // update sun position making it describe a elliptic movement
+    SUN.x = 10 + (WIDTH - 20) * (1 - (1 + Math.sin(progression * Math.PI * 2)) / 2);
+    SUN.y = SEA_LEVEL + (SEA_LEVEL - 10) * Math.cos(progression * Math.PI * 2);
+
+    // TODO moon sprite update
 
     // sky and ambiant color update
     SKY.texture = createSkyTexture(colors);
@@ -262,10 +203,9 @@ APP.ticker.add(() => {
     // front sprites brightness adjustment
     FILTER.brightness(luminosityOfRgbStr(colors[1]) / 255);
 
-    lastNow = now;
     if (DEBUG && init) console.timeEnd();
-    counter++;
     init = false;
+    counter++;
 });
 
 // -----------------------------------------------------------------------------
@@ -389,17 +329,14 @@ function starAlpha(y) {
 }
 
 /**
- * Returns two canvas contexts, each of them containing the color progression of
- * the sky colors through the day, starting from midnight to the end of the day.
+ * Returns two canvas contexts, each of them containing the color progression of the sky colors through the day,
+ * starting from midnight to the end of the day.
  * The first one is for the top color of the sky, the second one for the bottom
  * color.
  *
- * @param {Object} events - SunCalc events got from `Suncalc.getPosition()`
- * @param {Object} progressions - object having as keys the different events of
- * the day and their day progression percentage as values.
  * @return {CanvasRenderingContext2D[]}
  */
-function createSkyGradients(events, progressions) {
+function createSkyGradients() {
 
     let contexts = [];
     for (let i = 0; i < 2; i++) {
@@ -415,26 +352,14 @@ function createSkyGradients(events, progressions) {
 
         // editing gradient colors
         gradient.addColorStop(0, SKY_COLORS.night[i]);
-        gradient.addColorStop(
-            progressions.sunrise - GRAD_TRANSITION,
-            SKY_COLORS.night[i]
-        );
-        gradient.addColorStop(progressions.sunrise, SKY_COLORS.sunrise[i]);
-        gradient.addColorStop(
-            progressions.day - GRAD_TRANSITION,
-            SKY_COLORS.sunrise[i]
-        );
-        gradient.addColorStop(progressions.day, SKY_COLORS.day[i]);
-        gradient.addColorStop(
-            progressions.sunset - GRAD_TRANSITION,
-            SKY_COLORS.day[i]
-        );
-        gradient.addColorStop(progressions.sunset, SKY_COLORS.sunset[i]);
-        gradient.addColorStop(
-            progressions.night - GRAD_TRANSITION,
-            SKY_COLORS.sunset[i]
-        );
-        gradient.addColorStop(progressions.night, SKY_COLORS.night[i]);
+        gradient.addColorStop(SUNRISE_PROGRESSION - GRAD_TRANSITION, SKY_COLORS.night[i]);
+        gradient.addColorStop(SUNRISE_PROGRESSION, SKY_COLORS.sunrise[i]);
+        gradient.addColorStop(DAY_PROGRESSION - GRAD_TRANSITION, SKY_COLORS.sunrise[i]);
+        gradient.addColorStop(DAY_PROGRESSION, SKY_COLORS.day[i]);
+        gradient.addColorStop(SUNSET_PROGRESSION - GRAD_TRANSITION, SKY_COLORS.day[i]);
+        gradient.addColorStop(SUNSET_PROGRESSION, SKY_COLORS.sunset[i]);
+        gradient.addColorStop(NIGHT_PROGRESSION - GRAD_TRANSITION, SKY_COLORS.sunset[i]);
+        gradient.addColorStop(NIGHT_PROGRESSION, SKY_COLORS.night[i]);
         gradient.addColorStop(1, SKY_COLORS.night[i]);
 
         // drawing gradient on its canvas
