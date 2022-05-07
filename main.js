@@ -47,7 +47,7 @@ const STARS_APPEAR_SPEED = 20;
 
 for (let i = 0; i < STAR_NUMBER; i++) {
     const randIdx = ~~(Math.random() * STAR_SPRITES.length);
-    const star = PIXI.Sprite.from(STAR_SPRITES[randIdx]);
+    const star = new PIXI.Sprite.from(STAR_SPRITES[randIdx]);
     star.x = ~~(i / STAR_NUMBER * WIDTH) + 1;
     star.y = ~~(Math.random() * STARS_SPAWN_HEIGHT);
     star.alpha = starAlpha(star.y);
@@ -68,23 +68,36 @@ const SHOOTING_STAR_SPRITES = [
     'assets/img/shooting_star/5.png',
 ];
 const SHOOTING_STAR_TEXT = SHOOTING_STAR_SPRITES.map((e) => {
-    return PIXI.Texture.from(e, {});
+    return new PIXI.Texture.from(e, {});
 });
 
 // sun
-const SUN = PIXI.Sprite.from('assets/img/sun.png');
+const SUN = new PIXI.Sprite.from('assets/img/sun.png');
 SUN.anchor.set(0.5)
 SUN.roundPixels = true;
 
 // moon
-const MOON = PIXI.Sprite.from('assets/img/sun.png');
-MOON.anchor.set(0.5)
+const MOON_SPRITES = [
+    'assets/img/moon/new.png',
+    'assets/img/moon/waxing_crescent.png',
+    'assets/img/moon/quarter.png',
+    'assets/img/moon/waxing_gibbous.png',
+    'assets/img/moon/full.png',
+    'assets/img/moon/waning_gibbous.png',
+    'assets/img/moon/last_quarter.png',
+    'assets/img/moon/waning_crescent.png',
+];
+const MOON_TEXT = MOON_SPRITES.map((e) => {
+    return new PIXI.Texture.from(e, {});
+});
+const MOON = new PIXI.Sprite.from(MOON_SPRITES[4]);
+MOON.anchor.set(0.5);
 MOON.roundPixels = true;
 
 // sea
 const SEA_SPRITES = ['assets/img/sea/1.png', 'assets/img/sea/2.png'];
 const SEA = new PIXI.AnimatedSprite(SEA_SPRITES.map((e) => {
-    return PIXI.Texture.from(e, {});
+    return new PIXI.Texture.from(e, {});
 }));
 const SEA_LEVEL = 120;
 SEA.y = SEA_LEVEL;
@@ -97,7 +110,7 @@ const BOAT_LENGTH = 8; // in pixels
 const BOAT_NUMBER = 3;
 const BOAT_OFFSCREEN_MARGIN = BOAT_LENGTH * 10;
 for (let i = 0; i < BOAT_NUMBER; i++) {
-    let boat = PIXI.Sprite.from('assets/img/boat.png');
+    let boat = new PIXI.Sprite.from('assets/img/boat.png');
     boat.anchor.x = 0;
     boat.anchor.y = 1;
     boat.scale.x = Math.random() > 0.5 ? 1 : -1;
@@ -121,7 +134,7 @@ const CLOUD_SPRITES = [
 ];
 for (let i = 0; i < CLOUD_NUMBER; i++) {
     const randIdx = ~~(Math.random() * CLOUD_SPRITES.length);
-    let cloud = PIXI.Sprite.from(CLOUD_SPRITES[randIdx]);
+    let cloud = new PIXI.Sprite.from(CLOUD_SPRITES[randIdx]);
     cloud.anchor.x = 0;
     cloud.anchor.y = 1;
     cloud.x = Math.random() * (WIDTH + 2 * CLOUD_OFFSCREEN_MARGIN) - CLOUD_OFFSCREEN_MARGIN;
@@ -149,8 +162,8 @@ document.body.appendChild(APP.view);
 APP.stage.addChildAt(SKY, 0);
 APP.stage.addChildAt(STARS, 1);
 APP.stage.addChildAt(SUN, 2);
-APP.stage.addChildAt(FRONT, 3);
-// APP.stage.addChildAt(MOON, 4);
+APP.stage.addChildAt(MOON, 3);
+APP.stage.addChildAt(FRONT, 4);
 
 // -----------------------------------------------------------------------------
 // MAIN LOOP
@@ -194,7 +207,11 @@ APP.ticker.add(() => {
     SUN.x = 10 + (WIDTH - 20) * (1 - (1 + Math.sin(progression * Math.PI * 2)) / 2);
     SUN.y = SEA_LEVEL + (SEA_LEVEL - 10) * Math.cos(progression * Math.PI * 2);
 
-    // TODO moon sprite update
+    // moon sprite update in the opposite position of the sun
+    MOON.x = 10 + (WIDTH - 20) * ((1 + Math.sin(progression * Math.PI * 2)) / 2);
+    MOON.y = SEA_LEVEL - (SEA_LEVEL - 10) * Math.cos(progression * Math.PI * 2);
+    MOON.alpha = starAlpha(MOON.y);
+    // MOON.texture = MOON_TEXT[getMoonPhase(now)];
 
     // sky and ambiant color update
     SKY.texture = createSkyTexture(colors);
@@ -331,8 +348,7 @@ function starAlpha(y) {
 /**
  * Returns two canvas contexts, each of them containing the color progression of the sky colors through the day,
  * starting from midnight to the end of the day.
- * The first one is for the top color of the sky, the second one for the bottom
- * color.
+ * The first one is for the top color of the sky, the second one for the bottom color.
  *
  * @return {CanvasRenderingContext2D[]}
  */
@@ -394,7 +410,7 @@ function createSkyTexture(colors) {
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    return PIXI.Texture.from(canvas, {});
+    return new PIXI.Texture.from(canvas, {});
 }
 
 /**
@@ -412,6 +428,39 @@ function dayProgression(date) {
     b.setHours(0, 0, 0, 0); // next midnight
     return (date.getTime() - a.getTime()) / (b.getTime() - a.getTime());
 }
+
+/**
+ * Returns the moon phase for a given date.
+ * The phase is an integer between 0 and 7, with 0 representing new moon, and 7 representing waning crescent.
+ *
+ * https://gist.github.com/endel/dfe6bb2fbe679781948c
+ *
+ * @param {Date} date
+ * @returns {number}
+ */
+function getMoonPhase(date) {
+
+    const dateB = new Date(date);
+
+    if (dateB.getMonth() < 3) {
+        dateB.setFullYear(dateB.getFullYear() - 1);
+        dateB.setMonth(dateB.getMonth() + 12);
+    }
+
+    dateB.setMonth(dateB.getMonth() + 1);
+
+    let c = 365.25 * dateB.getFullYear();
+    let e = 30.6 * dateB.getMonth();
+    let jd = c + e + dateB.getDay() - 694039.09; // jd is total days elapsed
+    jd /= 29.5305882; // divide by the moon cycle
+    let b = Math.round(jd); // int(jd) -> b, take integer part of jd
+    jd -= b; // subtract integer part to leave fractional part of original jd
+    b = Math.round(jd * 8); // scale fraction from 0-8 and round
+
+    if (b >= 8) b = 0; // 0 and 8 are the same so turn 8 into 0
+    return b;
+}
+
 
 /**
  * Returns the css rgb string of an ImageData object.
