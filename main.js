@@ -90,7 +90,7 @@ const MOON_SPRITES = [
 const MOON_TEXT = MOON_SPRITES.map((e) => {
     return new PIXI.Texture.from(e, {});
 });
-const MOON = new PIXI.Sprite.from(MOON_SPRITES[4]);
+const MOON = new PIXI.Sprite.from(MOON_SPRITES[0]);
 MOON.anchor.set(0.5);
 MOON.roundPixels = true;
 
@@ -211,7 +211,7 @@ APP.ticker.add(() => {
     MOON.x = 10 + (WIDTH - 20) * ((1 + Math.sin(progression * Math.PI * 2)) / 2);
     MOON.y = SEA_LEVEL - (SEA_LEVEL - 10) * Math.cos(progression * Math.PI * 2);
     MOON.alpha = starAlpha(MOON.y);
-    // MOON.texture = MOON_TEXT[getMoonPhase(now)];
+    MOON.texture = MOON_TEXT[getMoonPhase(now)];
 
     // sky and ambiant color update
     SKY.texture = createSkyTexture(colors);
@@ -440,20 +440,21 @@ function dayProgression(date) {
  */
 function getMoonPhase(date) {
 
-    const dateB = new Date(date);
+    let day = date.getDate();
+    let month = date.getMonth();
+    let year = date.getFullYear();
 
-    if (dateB.getMonth() < 3) {
-        dateB.setFullYear(dateB.getFullYear() - 1);
-        dateB.setMonth(dateB.getMonth() + 12);
+    if (month < 3) {
+        year--;
+        month += 12;
     }
+    month++;
 
-    dateB.setMonth(dateB.getMonth() + 1);
-
-    let c = 365.25 * dateB.getFullYear();
-    let e = 30.6 * dateB.getMonth();
-    let jd = c + e + dateB.getDay() - 694039.09; // jd is total days elapsed
+    let c = 365.25 * year;
+    let e = 30.6 * month;
+    let jd = c + e + day - 694039.09; // jd is total days elapsed
     jd /= 29.5305882; // divide by the moon cycle
-    let b = Math.round(jd); // int(jd) -> b, take integer part of jd
+    let b = parseInt(jd); // int(jd) -> b, take integer part of jd
     jd -= b; // subtract integer part to leave fractional part of original jd
     b = Math.round(jd * 8); // scale fraction from 0-8 and round
 
