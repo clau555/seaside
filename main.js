@@ -38,7 +38,7 @@ const SKY = new PIXI.Sprite(createSkyTexture(SKY_COLORS.day));
 
 // stars
 const STARS = new PIXI.Container();
-const STAR_SPRITES = ['assets/img/stars/1.png', 'assets/img/stars/2.png'];
+const STAR_SPRITES = ['assets/sprites/stars/1.png', 'assets/sprites/stars/2.png'];
 const STAR_NUMBER = 60;
 const STARS_SPAWN_HEIGHT = 2 * HEIGHT / 3;
 
@@ -61,31 +61,31 @@ shuffleArray(RAND_STAR_INDEXES);
 
 // shooting star
 const SHOOTING_STAR_SPRITES = [
-    'assets/img/shooting_star/1.png',
-    'assets/img/shooting_star/2.png',
-    'assets/img/shooting_star/3.png',
-    'assets/img/shooting_star/4.png',
-    'assets/img/shooting_star/5.png',
+    'assets/sprites/shooting_star/1.png',
+    'assets/sprites/shooting_star/2.png',
+    'assets/sprites/shooting_star/3.png',
+    'assets/sprites/shooting_star/4.png',
+    'assets/sprites/shooting_star/5.png',
 ];
 const SHOOTING_STAR_TEXT = SHOOTING_STAR_SPRITES.map((e) => {
     return new PIXI.Texture.from(e, {});
 });
 
 // sun
-const SUN = new PIXI.Sprite.from('assets/img/sun.png');
+const SUN = new PIXI.Sprite.from('assets/sprites/sun.png');
 SUN.anchor.set(0.5)
 SUN.roundPixels = true;
 
 // moon
 const MOON_SPRITES = [
-    'assets/img/moon/new.png',
-    'assets/img/moon/waxing_crescent.png',
-    'assets/img/moon/quarter.png',
-    'assets/img/moon/waxing_gibbous.png',
-    'assets/img/moon/full.png',
-    'assets/img/moon/waning_gibbous.png',
-    'assets/img/moon/last_quarter.png',
-    'assets/img/moon/waning_crescent.png',
+    'assets/sprites/moon/new.png',
+    'assets/sprites/moon/waxing_crescent.png',
+    'assets/sprites/moon/quarter.png',
+    'assets/sprites/moon/waxing_gibbous.png',
+    'assets/sprites/moon/full.png',
+    'assets/sprites/moon/waning_gibbous.png',
+    'assets/sprites/moon/last_quarter.png',
+    'assets/sprites/moon/waning_crescent.png',
 ];
 const MOON_TEXT = MOON_SPRITES.map((e) => {
     return new PIXI.Texture.from(e, {});
@@ -95,7 +95,7 @@ MOON.anchor.set(0.5);
 MOON.roundPixels = true;
 
 // sea
-const SEA_SPRITES = ['assets/img/sea/1.png', 'assets/img/sea/2.png'];
+const SEA_SPRITES = ['assets/sprites/sea/1.png', 'assets/sprites/sea/2.png'];
 const SEA = new PIXI.AnimatedSprite(SEA_SPRITES.map((e) => {
     return new PIXI.Texture.from(e, {});
 }));
@@ -110,7 +110,7 @@ const BOAT_LENGTH = 8; // in pixels
 const BOAT_NUMBER = 3;
 const BOAT_OFFSCREEN_MARGIN = BOAT_LENGTH * 10;
 for (let i = 0; i < BOAT_NUMBER; i++) {
-    let boat = new PIXI.Sprite.from('assets/img/boat.png');
+    let boat = new PIXI.Sprite.from('assets/sprites/boat.png');
     boat.anchor.x = 0;
     boat.anchor.y = 1;
     boat.scale.x = Math.random() > 0.5 ? 1 : -1;
@@ -127,10 +127,10 @@ const CLOUD_LENGTH = 40; // in pixels
 const CLOUD_NUMBER = 10;
 const CLOUD_OFFSCREEN_MARGIN = CLOUD_LENGTH;
 const CLOUD_SPRITES = [
-    'assets/img/clouds/1.png',
-    'assets/img/clouds/2.png',
-    'assets/img/clouds/3.png',
-    'assets/img/clouds/4.png',
+    'assets/sprites/clouds/1.png',
+    'assets/sprites/clouds/2.png',
+    'assets/sprites/clouds/3.png',
+    'assets/sprites/clouds/4.png',
 ];
 for (let i = 0; i < CLOUD_NUMBER; i++) {
     const randIdx = ~~(Math.random() * CLOUD_SPRITES.length);
@@ -188,7 +188,7 @@ APP.ticker.add(() => {
     for (let i = 0; i < BOAT_NUMBER; i++) {
         const boat = BOATS.getChildAt(i);
         boat.x += boat.vx * boat.scale.x;
-        if (boat.x + BOAT_OFFSCREEN_MARGIN < 0) {
+        if (boat.x < -BOAT_OFFSCREEN_MARGIN) {
             // off-screen on left border
             boat.scale.x = 1;
             boat.x = -BOAT_LENGTH;
@@ -203,7 +203,7 @@ APP.ticker.add(() => {
     for (let i = 0; i < CLOUD_NUMBER; i++) {
         const cloud = CLOUDS.getChildAt(i);
         cloud.x += cloud.vx;
-        if (cloud.x + CLOUD_OFFSCREEN_MARGIN < 0) {
+        if (cloud.x < -CLOUD_OFFSCREEN_MARGIN) {
             // off-screen on left border
             cloud.x = -CLOUD_LENGTH;
             cloud.vx *= -1;
