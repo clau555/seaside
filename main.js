@@ -184,24 +184,81 @@ APP.ticker.add(() => {
     }
     const progression = dayProgression(now);
 
+    // boats update
+    for (let i = 0; i < BOAT_NUMBER; i++) {
+        const boat = BOATS.getChildAt(i);
+        boat.x += boat.vx * boat.scale.x;
+        if (boat.x + BOAT_OFFSCREEN_MARGIN < 0) {
+            // off-screen on left border
+            boat.scale.x = 1;
+            boat.x = -BOAT_LENGTH;
+        } else if (boat.x > WIDTH + BOAT_OFFSCREEN_MARGIN) {
+            // off-screen on right border
+            boat.scale.x = -1;
+            boat.x = WIDTH + BOAT_LENGTH;
+        }
+    }
+
+    // clouds update
+    for (let i = 0; i < CLOUD_NUMBER; i++) {
+        const cloud = CLOUDS.getChildAt(i);
+        cloud.x += cloud.vx;
+        if (cloud.x + CLOUD_OFFSCREEN_MARGIN < 0) {
+            // off-screen on left border
+            cloud.x = -CLOUD_LENGTH;
+            cloud.vx *= -1;
+        } else if (cloud.x > WIDTH + CLOUD_OFFSCREEN_MARGIN) {
+            // off-screen on right border
+            cloud.x = WIDTH + CLOUD_LENGTH;
+            cloud.vx *= -1;
+        }
+    }
+
+    // checking if stars are visible
     let visibleStars = false;
     if (progression >= NIGHT_PROGRESSION - GRAD_TRANSITION ||
         progression <= SUNRISE_PROGRESSION - GRAD_TRANSITION) {
         visibleStars = true;
     }
 
-    // getting current sky colors
-    const x = progression * GRAD_LENGTH;
-    const colors = [
-        imageDataToRgbStr(GRADIENTS[0].getImageData(x, 0, 1, 1).data),
-        imageDataToRgbStr(GRADIENTS[1].getImageData(x, 0, 1, 1).data),
-    ];
+    // spawning shooting star randomly
+    if (visibleStars && !~~(Math.random() * 200)) {
+        const shootingStar = new PIXI.AnimatedSprite(SHOOTING_STAR_TEXT);
+        shootingStar.loop = false;
+        shootingStar.animationSpeed = 0.8;
+        shootingStar.x = ~~(Math.random() * WIDTH);
+        shootingStar.y = ~~(Math.random() * STARS_SPAWN_HEIGHT);
+        shootingStar.alpha = starAlpha(shootingStar.y);
+        shootingStar.onComplete = () => {
+            shootingStar.destroy();
+        };
+        APP.stage.addChildAt(shootingStar, 1);
+        shootingStar.play();
+    }
 
-    // canvas updates
-    boatsUpdate();
-    cloudsUpdate();
-    spawnShootingStar(visibleStars);
-    starsUpdate(visibleStars);
+    // updates stars in a random order
+    const updateStarsVisibility = counter % STARS_APPEAR_SPEED === 0;
+    let checked = false;
+    for (let i = 0; i < RAND_STAR_INDEXES.length; i++) {
+        const star = STARS.getChildAt(RAND_STAR_INDEXES[i]);
+
+        // star visibility
+        if (updateStarsVisibility) {
+            if (!checked && !visibleStars && star.visible) {
+                star.visible = false;
+                checked = true;
+            } else if (!checked && visibleStars && !star.visible) {
+                star.visible = true;
+                checked = true;
+            }
+        }
+        // star twinkling
+        if (star.visible && !~~(Math.random() * 40)) {
+            const originalAlpha = starAlpha(star.y);
+            const offsetAlpha = Math.random() / 4;
+            star.alpha = originalAlpha - offsetAlpha;
+        }
+    }
 
     // update sun position making it describe a elliptic movement
     SUN.x = 10 + (WIDTH - 20) * (1 - (1 + Math.sin(progression * Math.PI * 2)) / 2);
@@ -212,6 +269,12 @@ APP.ticker.add(() => {
     MOON.y = SEA_LEVEL - (SEA_LEVEL - 10) * Math.cos(progression * Math.PI * 2);
     MOON.alpha = starAlpha(MOON.y);
     MOON.texture = MOON_TEXT[getMoonPhase(now)];
+
+    // getting current sky colors
+    const colors = [
+        imageDataToRgbStr(GRADIENTS[0].getImageData(progression * GRAD_LENGTH, 0, 1, 1).data),
+        imageDataToRgbStr(GRADIENTS[1].getImageData(progression * GRAD_LENGTH, 0, 1, 1).data),
+    ];
 
     // sky and ambiant color update
     SKY.texture = createSkyTexture(colors);
@@ -230,113 +293,7 @@ APP.ticker.add(() => {
 // -----------------------------------------------------------------------------
 
 /**
- * Updates boats sprite position on screen.
- * They continuously go from one side of the screen to the other.
- */
-function boatsUpdate() {
-    for (let i = 0; i < BOAT_NUMBER; i++) {
-        const boat = BOATS.getChildAt(i);
-
-        boat.x += boat.vx * boat.scale.x;
-
-        if (boat.x + BOAT_OFFSCREEN_MARGIN < 0) {
-            // off-screen on left border
-            boat.scale.x = 1;
-            boat.x = -BOAT_LENGTH;
-        } else if (boat.x > WIDTH + BOAT_OFFSCREEN_MARGIN) {
-            // off-screen on right border
-            boat.scale.x = -1;
-            boat.x = WIDTH + BOAT_LENGTH;
-        }
-    }
-}
-
-/**
- * Updates clouds sprite position on screen.
- * They continuously go from one side of the screen to the other.
- */
-function cloudsUpdate() {
-    for (let i = 0; i < CLOUD_NUMBER; i++) {
-        const cloud = CLOUDS.getChildAt(i);
-
-        cloud.x += cloud.vx;
-
-        if (cloud.x + CLOUD_OFFSCREEN_MARGIN < 0) {
-            // off-screen on left border
-            cloud.x = -CLOUD_LENGTH;
-            cloud.vx *= -1;
-        } else if (cloud.x > WIDTH + CLOUD_OFFSCREEN_MARGIN) {
-            // off-screen on right border
-            cloud.x = WIDTH + CLOUD_LENGTH;
-            cloud.vx *= -1;
-        }
-    }
-}
-
-/**
- * Spawns a shooting star in the sky at night at random coordinates.
- *
- * @param {boolean} visibleStars
- */
-function spawnShootingStar(visibleStars) {
-
-    if (visibleStars && !~~(Math.random() * 200)) {
-
-        const shootingStar = new PIXI.AnimatedSprite(SHOOTING_STAR_TEXT);
-        shootingStar.loop = false;
-        shootingStar.animationSpeed = 0.8;
-        shootingStar.x = ~~(Math.random() * WIDTH);
-        shootingStar.y = ~~(Math.random() * STARS_SPAWN_HEIGHT);
-        shootingStar.alpha = starAlpha(shootingStar.y);
-
-        shootingStar.onComplete = () => {
-            shootingStar.destroy();
-        };
-
-        APP.stage.addChildAt(shootingStar, 1);
-        shootingStar.play();
-    }
-}
-
-/**
- * Updates each stars transparency.
- * Each one of them appears slowly if at night.
- * They disappear slowly if not.
- *
- * @param {boolean} visibleStars - True if stars can be visible in the sky.
- */
-function starsUpdate(visibleStars)  {
-
-    const updateStarsVisibility = counter % STARS_APPEAR_SPEED === 0;
-    let checked = false;
-
-    for (let i = 0; i < RAND_STAR_INDEXES.length; i++) {
-
-        const star = STARS.getChildAt(RAND_STAR_INDEXES[i]);
-
-        // star appearance and disappearance
-        if (updateStarsVisibility) {
-            if (!checked && !visibleStars && star.visible) {
-                star.visible = false;
-                checked = true;
-            } else if (!checked && visibleStars && !star.visible) {
-                star.visible = true;
-                checked = true;
-            }
-        }
-
-        // star twinkling
-        if (star.visible && !~~(Math.random() * 40)) {
-            const originalAlpha = starAlpha(star.y);
-            const offsetAlpha = Math.random() / 4;
-            star.alpha = originalAlpha - offsetAlpha;
-        }
-    }
-}
-
-/**
- * Returns the appropriate alpha transparency
- * of a star sprite according to its height.
+ * Returns the appropriate alpha transparency of a star sprite according to its height.
  *
  * @param {number} y - star height in pixels
  * @return {number}
@@ -461,7 +418,6 @@ function getMoonPhase(date) {
     if (b >= 8) b = 0; // 0 and 8 are the same so turn 8 into 0
     return b;
 }
-
 
 /**
  * Returns the css rgb string of an ImageData object.
