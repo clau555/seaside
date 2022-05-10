@@ -87,10 +87,9 @@ const MOON_SPRITES = [
     'assets/sprites/moon/last_quarter.png',
     'assets/sprites/moon/waning_crescent.png',
 ];
-const MOON_TEXT = MOON_SPRITES.map((e) => {
+const MOON = new PIXI.AnimatedSprite(MOON_SPRITES.map((e) => {
     return new PIXI.Texture.from(e, {});
-});
-const MOON = new PIXI.Sprite.from(MOON_SPRITES[0]);
+}));
 MOON.anchor.set(0.5);
 MOON.roundPixels = true;
 
@@ -268,7 +267,7 @@ APP.ticker.add(() => {
     MOON.x = 10 + (WIDTH - 20) * ((1 + Math.sin(progression * Math.PI * 2)) / 2);
     MOON.y = SEA_LEVEL - (SEA_LEVEL - 10) * Math.cos(progression * Math.PI * 2);
     MOON.alpha = starAlpha(MOON.y);
-    MOON.texture = MOON_TEXT[getMoonPhase(now)];
+    MOON.gotoAndStop(getMoonPhase(now));
 
     // getting current sky colors
     const colors = [
@@ -277,6 +276,7 @@ APP.ticker.add(() => {
     ];
 
     // sky and ambiant color update
+    SKY.texture.destroy(true);
     SKY.texture = createSkyTexture(colors);
     document.body.style.backgroundColor = colors[0];
 
