@@ -1,6 +1,6 @@
-// -----------------------------------------------------------------------------
+// ---------
 // CONSTANTS
-// -----------------------------------------------------------------------------
+// ---------
 
 // audio
 const AUDIO = new Audio('assets/sea-waves.wav');
@@ -164,9 +164,9 @@ APP.stage.addChildAt(SUN, 2);
 APP.stage.addChildAt(MOON, 3);
 APP.stage.addChildAt(FRONT, 4);
 
-// -----------------------------------------------------------------------------
+// ---------
 // MAIN LOOP
-// -----------------------------------------------------------------------------
+// ---------
 
 const DEBUG = false;
 let counter = 0;
@@ -288,15 +288,15 @@ APP.ticker.add(() => {
     counter++;
 });
 
-// -----------------------------------------------------------------------------
+// ---------
 // FUNCTIONS
-// -----------------------------------------------------------------------------
+// ---------
 
 /**
  * Returns the appropriate alpha transparency of a star sprite according to its height.
  *
  * @param {number} y - star height in pixels
- * @return {number}
+ * @return {number} - alpha transparency
  */
 function starAlpha(y) {
     return (STARS_SPAWN_HEIGHT - y) / STARS_SPAWN_HEIGHT;
@@ -307,7 +307,7 @@ function starAlpha(y) {
  * starting from midnight to the end of the day.
  * The first one is for the top color of the sky, the second one for the bottom color.
  *
- * @return {CanvasRenderingContext2D[]}
+ * @return {CanvasRenderingContext2D[]} - gradients
  */
 function createSkyGradients() {
 
@@ -351,7 +351,7 @@ function createSkyGradients() {
  * https://pixijs.io/examples/#/textures/gradient-basic.js
  *
  * @param {string[]} colors - css rgb strings
- * @return {PIXI.Texture}
+ * @return {PIXI.Texture} - sky texture
  */
 function createSkyTexture(colors) {
 
@@ -374,7 +374,7 @@ function createSkyTexture(colors) {
  * Returns progression of the given `date` in its day.
  * Exemple: a date at noon is 0.5, at midnight is 0.
  *
- * @param {Date} date
+ * @param {Date} date - date
  * @return {number} - day progression in percentage (0 to 1)
  */
 function dayProgression(date) {
@@ -392,8 +392,8 @@ function dayProgression(date) {
  *
  * https://gist.github.com/endel/dfe6bb2fbe679781948c
  *
- * @param {Date} date
- * @returns {number}
+ * @param {Date} date - date
+ * @returns {number} - moon phase index
  */
 function getMoonPhase(date) {
 
@@ -422,8 +422,8 @@ function getMoonPhase(date) {
 /**
  * Returns the css rgb string of an ImageData object.
  *
- * @param {Uint8ClampedArray} imgData
- * @return {string}
+ * @param {Uint8ClampedArray} imgData - image data
+ * @return {string} - css rgb string
  */
 function imageDataToRgbStr(imgData) {
     return 'rgb(' + imgData[0] + ',' + imgData[1] + ',' + imgData[2] + ')';
@@ -432,8 +432,8 @@ function imageDataToRgbStr(imgData) {
 /**
  * Returns the luminosity of a css rgb string.
  *
- * @param {string} rgbStr
- * @return {number}
+ * @param {string} rgbStr - css rgb string
+ * @return {number} - luminosity
  */
 function luminosityOfRgbStr(rgbStr) {
     const rgb = rgbStr.match(/\d+/g);
@@ -445,7 +445,7 @@ function luminosityOfRgbStr(rgbStr) {
  *
  * https://stackoverflow.com/a/12646864/17987233
  *
- * @param {number[]} array
+ * @param {number[]} array - array to shuffle
  */
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
