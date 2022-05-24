@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://clau555.github.io/seaside/" target="blank"><img src="assets/logo.png" alt="Seaside Logo" /></a>
+    <a href="https://clau555.github.io/seaside/"><img src="assets/title.png" alt="title" /></a>
 </p>
 
 ---
