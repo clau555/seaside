@@ -1,13 +1,11 @@
-// ---------
-// CONSTANTS
-// ---------
+/* ----------------------------- INITIALIZATION ---------------------------- */
 
 // audio
-const AUDIO = new Audio('assets/sea-waves.wav');
-AUDIO.loop = true;
-AUDIO.volume = 0.2;
-AUDIO.load();
-AUDIO.play().then(() => {});
+const audio = new Audio('assets/sea-waves.wav');
+audio.loop = true;
+audio.volume = 0.2;
+audio.load();
+audio.play().then(() => {});
 
 // screen dimensions
 const WIDTH = 256;
@@ -21,10 +19,10 @@ const NIGHT_PROGRESSION = 0.77;
 
 // sky colors
 const SKY_COLORS = {
-    sunrise: [ 'rgb(63, 144, 208)', 'rgb(255, 194, 117)' ],
-    day: [ 'rgb(42, 207, 255)', 'rgb(181, 255, 246)' ],
-    sunset: [ 'rgb(59,38,115)', 'rgb(255,86,36)' ],
-    night: [ 'rgb(8, 0, 30)', 'rgb(50, 39, 119)' ],
+    sunrise:    [ 'rgb(63, 144, 208)', 'rgb(255, 194, 117)' ],
+    day:        [ 'rgb(42, 207, 255)', 'rgb(181, 255, 246)' ],
+    sunset:     [ 'rgb(59,38,115)', 'rgb(255,86,36)' ],
+    night:      [ 'rgb(8, 0, 30)', 'rgb(50, 39, 119)' ],
 };
 
 // sky colors gradients
@@ -34,11 +32,15 @@ const GRAD_TRANSITION = 0.03; // transition duration between phases in %
 const GRADIENTS = createSkyGradients();
 
 // sky
-const SKY = new PIXI.Sprite(createSkyTexture(SKY_COLORS.day));
+const sky = PIXI.Sprite.from(createSkyTexture(SKY_COLORS.day));
 
 // stars
-const STARS = new PIXI.Container();
-const STAR_SPRITES = ['assets/sprites/stars/1.png', 'assets/sprites/stars/2.png'];
+const stars = new PIXI.Container();
+const STAR_SPRITES_LENGTH = 2;
+const STAR_SPRITES = [];
+for (let i = 1; i <= STAR_SPRITES_LENGTH; i++) {
+    STAR_SPRITES.push('assets/sprites/stars/' + i + '.png');
+}
 const STAR_NUMBER = 60;
 const STARS_SPAWN_HEIGHT = 2 * HEIGHT / 3;
 
@@ -47,69 +49,75 @@ const STARS_APPEAR_SPEED = 20;
 
 for (let i = 0; i < STAR_NUMBER; i++) {
     const randIdx = ~~(Math.random() * STAR_SPRITES.length);
-    const star = new PIXI.Sprite.from(STAR_SPRITES[randIdx]);
+    const star = PIXI.Sprite.from(STAR_SPRITES[randIdx]);
     star.x = ~~(i / STAR_NUMBER * WIDTH) + 1;
     star.y = ~~(Math.random() * STARS_SPAWN_HEIGHT);
     star.alpha = starAlpha(star.y);
     star.visible = false;
-    STARS.addChild(star);
+    stars.addChild(star);
 }
-const RAND_STAR_INDEXES = Array
+const rand_star_indexes = Array
     .apply(null, {length: STAR_NUMBER})
     .map((_, i) => i);
-shuffleArray(RAND_STAR_INDEXES);
+shuffleArray(rand_star_indexes);
 
 // shooting star
-const SHOOTING_STAR_SPRITES = [
-    'assets/sprites/shooting_star/1.png',
-    'assets/sprites/shooting_star/2.png',
-    'assets/sprites/shooting_star/3.png',
-    'assets/sprites/shooting_star/4.png',
-    'assets/sprites/shooting_star/5.png',
-];
+const SHOOTING_STAR_SPRITES_LENGTH = 5;
+const SHOOTING_STAR_SPRITES = [];
+for (let i = 1; i <= SHOOTING_STAR_SPRITES_LENGTH; i++) {
+    SHOOTING_STAR_SPRITES.push('assets/sprites/shooting_star/' + i + '.png');
+}
 const SHOOTING_STAR_TEXT = SHOOTING_STAR_SPRITES.map((e) => {
-    return new PIXI.Texture.from(e, {});
+    return PIXI.Texture.from(e, {});
 });
 
 // sun
-const SUN = new PIXI.Sprite.from('assets/sprites/sun.png');
-SUN.anchor.set(0.5)
-SUN.roundPixels = true;
+const sun = PIXI.Sprite.from('assets/sprites/sun.png');
+sun.anchor.set(0.5)
+sun.roundPixels = true;
 
 // moon
-const MOON_SPRITES = [
-    'assets/sprites/moon/new.png',
-    'assets/sprites/moon/waxing_crescent.png',
-    'assets/sprites/moon/quarter.png',
-    'assets/sprites/moon/waxing_gibbous.png',
-    'assets/sprites/moon/full.png',
-    'assets/sprites/moon/waning_gibbous.png',
-    'assets/sprites/moon/last_quarter.png',
-    'assets/sprites/moon/waning_crescent.png',
+const MOON_NAMES = [
+    'new',
+    'waxing_crescent',
+    'quarter',
+    'waxing_gibbous',
+    'full',
+    'waning_gibbous',
+    'last_quarter',
+    'waning_crescent'
 ];
-const MOON = new PIXI.AnimatedSprite(MOON_SPRITES.map((e) => {
-    return new PIXI.Texture.from(e, {});
+MOON_SPRITES = [];
+for (let i = 0; i < MOON_NAMES.length; i++) {
+    MOON_SPRITES.push('assets/sprites/moon/' + MOON_NAMES[i] + '.png');
+}
+const moon = new PIXI.AnimatedSprite(MOON_SPRITES.map((e) => {
+    return PIXI.Texture.from(e, {});
 }));
-MOON.anchor.set(0.5);
-MOON.roundPixels = true;
+moon.anchor.set(0.5);
+moon.roundPixels = true;
 
 // sea
-const SEA_SPRITES = ['assets/sprites/sea/1.png', 'assets/sprites/sea/2.png'];
-const SEA = new PIXI.AnimatedSprite(SEA_SPRITES.map((e) => {
-    return new PIXI.Texture.from(e, {});
+const SEA_SPRITES_LENGTH = 2;
+const SEA_SPRITES = [];
+for (let i = 1; i <= SEA_SPRITES_LENGTH; i++) {
+    SEA_SPRITES.push('assets/sprites/sea/' + i + '.png');
+}
+const sea = new PIXI.AnimatedSprite(SEA_SPRITES.map((e) => {
+    return PIXI.Texture.from(e, {});
 }));
 const SEA_LEVEL = 120;
-SEA.y = SEA_LEVEL;
-SEA.animationSpeed = 0.02;
-SEA.play();
+sea.y = SEA_LEVEL;
+sea.animationSpeed = 0.02;
+sea.play();
 
 // boats
-const BOATS = new PIXI.Container();
+const boats = new PIXI.Container();
 const BOAT_LENGTH = 8; // in pixels
 const BOAT_NUMBER = 3;
 const BOAT_OFFSCREEN_MARGIN = BOAT_LENGTH * 10;
 for (let i = 0; i < BOAT_NUMBER; i++) {
-    let boat = new PIXI.Sprite.from('assets/sprites/boat.png');
+    let boat = PIXI.Sprite.from('assets/sprites/boat.png');
     boat.anchor.x = 0;
     boat.anchor.y = 1;
     boat.scale.x = Math.random() > 0.5 ? 1 : -1;
@@ -117,23 +125,22 @@ for (let i = 0; i < BOAT_NUMBER; i++) {
     boat.y = SEA_LEVEL;
     boat.roundPixels = true;
     boat.vx = Math.random() * 0.1;
-    BOATS.addChild(boat);
+    boats.addChild(boat);
 }
 
 // clouds
-const CLOUDS = new PIXI.Container();
+const clouds = new PIXI.Container();
 const CLOUD_LENGTH = 40; // in pixels
 const CLOUD_NUMBER = 10;
 const CLOUD_OFFSCREEN_MARGIN = CLOUD_LENGTH;
-const CLOUD_SPRITES = [
-    'assets/sprites/clouds/1.png',
-    'assets/sprites/clouds/2.png',
-    'assets/sprites/clouds/3.png',
-    'assets/sprites/clouds/4.png',
-];
+const CLOUD_SPRITES_LENGTH = 4;
+const CLOUD_SPRITES = [];
+for (let i = 1; i <= CLOUD_SPRITES_LENGTH; i++) {
+    CLOUD_SPRITES.push('assets/sprites/clouds/' + i + '.png');
+}
 for (let i = 0; i < CLOUD_NUMBER; i++) {
     const randIdx = ~~(Math.random() * CLOUD_SPRITES.length);
-    let cloud = new PIXI.Sprite.from(CLOUD_SPRITES[randIdx]);
+    let cloud = PIXI.Sprite.from(CLOUD_SPRITES[randIdx]);
     cloud.anchor.x = 0;
     cloud.anchor.y = 1;
     cloud.x = Math.random() * (WIDTH + 2 * CLOUD_OFFSCREEN_MARGIN) - CLOUD_OFFSCREEN_MARGIN;
@@ -142,38 +149,36 @@ for (let i = 0; i < CLOUD_NUMBER; i++) {
     let rndSign = Math.random() > 0.5 ? 1 : -1;
     cloud.vx = Math.random() * 0.1 * rndSign;
     cloud.scale.x = rndSign;
-    CLOUDS.addChild(cloud);
+    clouds.addChild(cloud);
 }
 
 // front sprites group
-const FRONT = new PIXI.Container();
-FRONT.addChild(SEA);
-FRONT.addChild(BOATS);
-FRONT.addChild(CLOUDS);
+const front = new PIXI.Container();
+front.addChild(sea);
+front.addChild(boats);
+front.addChild(clouds);
 
 // front sprites brightness filter
-const FILTER = new PIXI.filters.ColorMatrixFilter();
-FRONT.filters = [FILTER];
+const filter = new PIXI.filters.ColorMatrixFilter();
+front.filters = [filter];
 
 // stage initialization
-const APP = new PIXI.Application({width: WIDTH, height: HEIGHT});
-document.body.appendChild(APP.view);
-APP.stage.addChildAt(SKY, 0);
-APP.stage.addChildAt(STARS, 1);
-APP.stage.addChildAt(SUN, 2);
-APP.stage.addChildAt(MOON, 3);
-APP.stage.addChildAt(FRONT, 4);
+const app = new PIXI.Application({width: WIDTH, height: HEIGHT});
+document.body.appendChild(app.view);
+app.stage.addChildAt(sky, 0);
+app.stage.addChildAt(stars, 1);
+app.stage.addChildAt(sun, 2);
+app.stage.addChildAt(moon, 3);
+app.stage.addChildAt(front, 4);
 
-// ---------
-// MAIN LOOP
-// ---------
+/* ------------------------------- MAIN LOOP ------------------------------- */
 
 const DEBUG = false;
 let counter = 0;
 let init = true; // true on first loop, false after
 
 // main loop
-APP.ticker.add(() => {
+app.ticker.add(() => {
 
     if (DEBUG && init) console.time();
 
@@ -185,7 +190,7 @@ APP.ticker.add(() => {
 
     // boats update
     for (let i = 0; i < BOAT_NUMBER; i++) {
-        const boat = BOATS.getChildAt(i);
+        const boat = boats.getChildAt(i);
         boat.x += boat.vx * boat.scale.x;
         if (boat.x < -BOAT_OFFSCREEN_MARGIN) {
             // off-screen on left border
@@ -200,7 +205,7 @@ APP.ticker.add(() => {
 
     // clouds update
     for (let i = 0; i < CLOUD_NUMBER; i++) {
-        const cloud = CLOUDS.getChildAt(i);
+        const cloud = clouds.getChildAt(i);
         cloud.x += cloud.vx;
         if (cloud.x < -CLOUD_OFFSCREEN_MARGIN) {
             // off-screen on left border
@@ -231,15 +236,15 @@ APP.ticker.add(() => {
         shootingStar.onComplete = () => {
             shootingStar.destroy();
         };
-        APP.stage.addChildAt(shootingStar, 1);
+        app.stage.addChildAt(shootingStar, 1);
         shootingStar.play();
     }
 
     // updates stars in a random order
     const updateStarsVisibility = counter % STARS_APPEAR_SPEED === 0;
     let checked = false;
-    for (let i = 0; i < RAND_STAR_INDEXES.length; i++) {
-        const star = STARS.getChildAt(RAND_STAR_INDEXES[i]);
+    for (let i = 0; i < rand_star_indexes.length; i++) {
+        const star = stars.getChildAt(rand_star_indexes[i]);
 
         // star visibility
         if (updateStarsVisibility) {
@@ -260,14 +265,14 @@ APP.ticker.add(() => {
     }
 
     // update sun position making it describe a elliptic movement
-    SUN.x = 10 + (WIDTH - 20) * (1 - (1 + Math.sin(progression * Math.PI * 2)) / 2);
-    SUN.y = SEA_LEVEL + (SEA_LEVEL - 10) * Math.cos(progression * Math.PI * 2);
+    sun.x = 10 + (WIDTH - 20) * (1 - (1 + Math.sin(progression * Math.PI * 2)) / 2);
+    sun.y = SEA_LEVEL + (SEA_LEVEL - 10) * Math.cos(progression * Math.PI * 2);
 
     // moon sprite update in the opposite position of the sun
-    MOON.x = 10 + (WIDTH - 20) * ((1 + Math.sin(progression * Math.PI * 2)) / 2);
-    MOON.y = SEA_LEVEL - (SEA_LEVEL - 10) * Math.cos(progression * Math.PI * 2);
-    MOON.alpha = starAlpha(MOON.y);
-    MOON.gotoAndStop(getMoonPhase(now));
+    moon.x = 10 + (WIDTH - 20) * ((1 + Math.sin(progression * Math.PI * 2)) / 2);
+    moon.y = SEA_LEVEL - (SEA_LEVEL - 10) * Math.cos(progression * Math.PI * 2);
+    moon.alpha = starAlpha(moon.y);
+    moon.gotoAndStop(getMoonPhase(now));
 
     // getting current sky colors
     const colors = [
@@ -276,21 +281,19 @@ APP.ticker.add(() => {
     ];
 
     // sky and ambiant color update
-    SKY.texture.destroy(true);
-    SKY.texture = createSkyTexture(colors);
+    sky.texture.destroy(true);
+    sky.texture = createSkyTexture(colors);
     document.body.style.backgroundColor = colors[0];
 
     // front sprites brightness adjustment
-    FILTER.brightness(luminosityOfRgbStr(colors[1]) / 255);
+    filter.brightness(luminosityOfRgbStr(colors[1]) / 255);
 
     if (DEBUG && init) console.timeEnd();
     init = false;
     counter++;
 });
 
-// ---------
-// FUNCTIONS
-// ---------
+/* ------------------------------- FUNCTIONS ------------------------------- */
 
 /**
  * Returns the appropriate alpha transparency of a star sprite according to its height.
@@ -318,7 +321,7 @@ function createSkyGradients() {
         const canvas = document.createElement('canvas');
         canvas.width = GRAD_LENGTH;
         canvas.height = GRAD_HEIGHT;
-        const context = canvas.getContext('2d')
+        const context = canvas.getContext('2d');
 
         // creating gradient
         const gradient = context.createLinearGradient(0, 0, GRAD_LENGTH, 0);
@@ -367,7 +370,7 @@ function createSkyTexture(colors) {
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    return new PIXI.Texture.from(canvas, {});
+    return PIXI.Texture.from(canvas, {});
 }
 
 /**
